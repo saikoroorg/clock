@@ -1,0 +1,388 @@
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1">
+<title>Clock</title>
+<link rel="icon" type="image/svg" href="icon.svg">
+<link rel="apple-touch-icon" href="icon.png" sizes="192x192">
+<style>
+body {
+	font-family: Courier, monospace, sans-serif;
+	background-color: #fff;
+}
+a {
+	color: #000;
+	text-decoration: none;
+}
+small {
+	font-size: 50%;
+}
+#container {
+	width: 100%; height: 100%;
+	display: flex; display: -webkit-flex;
+	flex-direction: column; -webkit-flex-direction: column;
+	justify-content: flex-start; -webkit-justify-content: flex-start;
+	align-items: center; -webkit-align-items: center;
+}
+#header {
+	width: 95%; margin: 0px;
+	flex: 0 1 auto;
+	display: flex; display: -webkit-flex;
+	flex-direction: row; -webkit-flex-direction: row;
+	justify-content: space-between; -webkit-justify-content: space-between;
+	align-items: center; -webkit-align-items: center;
+	opacity: 1;
+}
+#contents {
+	width: 95%; height: 90%;
+	flex: 1 1 auto;
+	display: flex; display: -webkit-flex;
+	flex-direction: column; -webkit-flex-direction: column;
+	justify-content: center; -webkit-justify-content: center;
+	align-items: center; -webkit-align-items: center;
+	background-color: #eee;
+	opacity: 1;
+}
+#footer {
+	width: 95%; margin: 0px;
+	flex: 0 1 auto;
+	display: flex; display: -webkit-flex;
+	flex-direction: row; -webkit-flex-direction: row;
+	justify-content: flex-end; -webkit-justify-content: flex-end;
+	align-items: center; -webkit-align-items: center;
+}
+#author,#version {
+	font-size: 12px;
+	opacity: 0.1;
+}
+.logo {
+	width: 160px; height: 60px; margin: 0px 16px;
+	display: flex; display: -webkit-flex;
+	flex-direction: row; -webkit-flex-direction: row;
+	justify-content: flex-start; -webkit-justify-content: flex-start;
+	align-items: center; -webkit-align-items: center;
+	font-size: 24px;
+}
+.logo .icon {
+	width: 40px; height: 40px; padding: 10px; margin-left: -28px;
+}
+.logo .title {
+	user-select: none;
+}
+.menu {
+	width: 40px; height: 40px; margin: 5px 0px;
+	display: flex; display: -webkit-flex;
+	flex-direction: row; -webkit-flex-direction: row;
+	justify-content: space-between; -webkit-justify-content: space-between;
+	align-items: flex-end; -webkit-align-items: flex-end;
+	background-color: #888;
+}
+.menu a {
+	width: 40px; height: 40px;
+	display: flex; display: -webkit-flex;
+	flex-direction: column; -webkit-flex-direction: column;
+	justify-content: center; -webkit-justify-content: center;
+	align-items: center; -webkit-align-items: center;
+	font-size: 16px;
+	background-color: #000;
+	color: #fff;
+	text-decoration: none;
+	transform: scale(1);
+}
+.menu small {
+	font-size: 10px;
+}
+.menu a:hover {
+	transform: scale(1);
+	opacity: 0.6;
+}
+.menu a:active {
+	transform: scale(0.9);
+	opacity: 1;
+}
+@media (max-height: 479px) {
+	.logo {
+		height: 20px;
+		font-size: 18px;
+	}
+	.menu {
+		height: 20px;
+	}
+	.menu a {
+		height: 20px;
+		font-size: 10px;
+	}
+	.menu small {
+		font-size: 6px;
+	}
+	#author,#version {
+		height: 10px;
+		font-size: 8px;
+	}
+}
+</style>
+</head>
+<body>
+<div id="container">
+	<h1 id="header">
+		<div class="logo">
+			<!--img class="icon" src="icon.svg"/!-->
+			<a class="title">Clock</a>
+		</div>
+		<div class="menu">
+			<a id="info" href="javascript:changeClock();">10</a>
+		</div>
+	</h1>
+	<div id="contents" class="cubeScreen"></div>
+	<h6 id="footer">
+		<div id="author">.</div>
+		<div id="version">.</div>
+	</h6>
+</div>
+<script>console.log = () => {};</script>
+<script src="manifest.js"></script>
+<script src="cube-api-0.8.js"></script>
+<!--Menu--><script>
+	var counts = 0; // Time counts.
+	var addition = 0; // Additional time counts.
+	var bonus = 0; // Bonus time counts.
+	var lock = false;
+
+	// Set clock.
+	var setClock = (x, a=0, b=0) => {
+		counts = x > 999 ? 999 : x > 0 ? x : 0;
+		addition = a > 999 ? 999 : a > 0 ? a : 0;
+		bonus = b > 99 ? 99 : b > 0 ? b : 0;
+		// Reset clock information.
+		var info = document.getElementById("info");
+		if (info) {
+			if (counts > 0 && addition > 0) {
+				info.innerHTML = "" + (counts) + " <small>-" + addition + "</small>";
+			} else if (addition > 0) {
+				info.innerHTML = "-" + addition + "";
+			} else if (bonus > 0) {
+				info.innerHTML = "" + (counts) + " <small>+" + bonus + "</small>";
+			} else {
+				info.innerHTML = "" + (counts) + "";
+			}
+		}
+
+		playing = -2; // Replay.
+	};
+
+	// Change clock.
+	var changeClock = () => {
+		if (!lock) {
+			if (counts > 5) {
+				setClock(5, 0, 5);
+			} else if (counts > 0) {
+				setClock(0, 10, 0);
+			} else {
+				setClock(10, 30, 0);
+			}
+		}
+	};
+
+	// Get query parameters.
+	let params = cubeParamNumbers();
+
+	// Additional time (byoyomi) mode.
+	if (cubeParamContains(0, "a")) {
+		setClock(params[0], params[1], 0);
+		lock = true;
+
+	// Bonus time (Fischer) mode.
+	} else if (cubeParamContains(0, "b")) {
+		setClock(params[0], 0, params[1]);
+		lock = true;
+
+	// Simple mode.
+	} else if (params[0] > 0) {
+		setClock(params[0], 0, 0);
+		lock = true;
+
+	// Default.
+	} else {
+		setClock(10, 30, 0);
+	}
+
+</script><!--/Menu-->
+<!--Main--><script>(async()=>{
+
+	// Resize screen.
+	cubeResizeScreen(80, 120);
+
+	// Player states.
+	const playerCounts = 2;
+	var playerIndex = 0;
+	var clockCounts = [counts, counts];
+	var clockAdditions = [addition, addition];
+	var clockBonuses = [bonus, bonus];
+
+	// Create sprites.
+	const numberCounts = [6, 6];
+	var numberSprites = [[], []];
+	var numberFrames = [[], []];
+	var buttonSprite = await cubeSprite("resource.svg", 40, 40);
+	for (var j = 0; j < playerCounts; j++) {
+		for (var i = 0; i < numberCounts[j]; i++) {
+			numberSprites[j][i] = await cubeSprite("resource.svg", 40, 40);
+		}
+	}
+
+	//var playing = 0; // Playing count.
+	while (true) {
+
+		// Reset counts.
+		if (playing < 0) {
+			playerIndex = 0;
+			clockCounts = [counts*60, counts*60];
+			clockAdditions = [addition, addition];
+			clockBonuses = [bonus, bonus];
+		}
+
+		// Start clock.
+		let startTime = cubeTime();
+
+		// Playing loop.
+		for (playing = 5; playing >= 1; playing++) {
+
+			// Player time.
+			let spendTimes = [0, 0];
+			let currentTimes = [0, 0];
+
+			for (let j = 0; j < playerCounts; j++) {
+
+				if (j == playerIndex - 1) {
+					spendTimes[j] = cubeTime() - startTime;
+
+					// Playing clock.
+					if (clockCounts[j] > 0) {
+						currentTimes[j] = clockCounts[j] - cubeDiv(spendTimes[j], 1000);
+						if (currentTimes[j] <= 0) {
+							startTime = cubeTime() + currentTimes[j];
+							currentTimes[j] = clockCounts[j] = 0;
+						}
+
+					// Playing clock with additional count.
+					} else if (clockAdditions[j] > 0) {
+						currentTimes[j] = cubeDiv(spendTimes[j], 1000);
+						if (currentTimes[j] >= clockAdditions[j]) {
+							currentTimes[j] = clockAdditions[j];
+							spendTimes[j] = 0;
+						}
+					}
+
+				// Not playing clock.
+				} else {
+					spendTimes[j] = 0;
+					currentTimes[j] = clockCounts[j];
+				}
+
+				// Player time second part.
+				let r = cubeMod(currentTimes[j], 60);
+				for (numberCounts[j] = 0; numberCounts[j] < 2; ) {
+					numberFrames[j][numberCounts[j]] = cubeMod(r, 10) + 1;
+					r = cubeDiv(r, 10);
+					numberCounts[j]++;
+				}
+
+				// Time separator.
+				if (cubeMod(spendTimes[j], 1000) < 500) {
+					numberFrames[j][numberCounts[j]] = 22;
+				} else {
+					numberFrames[j][numberCounts[j]] = 0;
+				}
+				numberCounts[j]++;
+
+				// Player time minute part.
+				r = cubeDiv(currentTimes[j], 60);
+				for (; r > 0 || numberCounts[j] < 5;) {
+
+					// Time count.
+					if (clockCounts[j] > 0) {
+						numberFrames[j][numberCounts[j]] = cubeMod(r, 10) + 1;
+
+					// Additional time count.
+					} else {
+						if (r > 0 && currentTimes[j] >= 60) {
+							numberFrames[j][numberCounts[j]] = cubeMod(r, 10) + 1;
+						} else {
+							numberFrames[j][numberCounts[j]] = 0;
+						}
+					}
+					r = cubeDiv(r, 10);
+					numberCounts[j]++;
+				}
+
+				// Set touch sprite.
+				let s = playing < 5 ? 1.4 * (1.2 - 0.04 * playing) : 1.4;
+				cubeAnimate(25, buttonSprite);
+				cubeExpand(s, buttonSprite);
+
+				// Set clock number sprites.
+				for (let i = 0; i < numberCounts[j]; i++) {
+					cubeAnimate(numberFrames[j][i], numberSprites[j][i]);
+					cubeExpand(2.4 / (numberCounts[j] + 1), numberSprites[j][i]);
+					cubeRotate(0, numberSprites[j][i]);
+				}
+			}
+
+			cubeClear();
+			let size = cubeScreenSize();
+
+			// Draw sprites.
+			/*if (playerIndex != 0)*/ {
+				let sx = size.x / 2;
+				let sy = size.y * (playerIndex >= 2 ? 1 : 3) / 4;
+				cubeMove(sx, sy, buttonSprite);
+				cubeDraw(buttonSprite);
+			}
+			for (let j = 0; j < playerCounts; j++) {
+				for (let i = 0; i < numberCounts[j]; i++) {
+					if (j > 0) {
+						let sx = size.x * (0.9 - 0.8 * (numberCounts[j] - i) / (numberCounts[j] + 1));
+						let sy = size.y * 0.25;
+						cubeMove(sx, sy, numberSprites[j][i]);
+						cubeRotate(180, numberSprites[j][i])
+					} else {
+						let sx = size.x * (0.1 + 0.8 * (numberCounts[j] - i) / (numberCounts[j] + 1));
+						let sy = size.y * 0.75;
+						cubeMove(sx, sy, numberSprites[j][i]);
+					}
+					cubeDraw(numberSprites[j][i]);
+				}
+			}
+
+			// Wait for input.
+			await cubeReadJoypad(10);
+
+			// Trigger button.
+			if (cubeJoypadAction()) {
+				for (let j = 0; j < playerCounts; j++) {
+					if (clockCounts[j] > 0) {
+
+						// Set current clock.
+						clockCounts[j] = currentTimes[j];
+
+						// Add bonus clock.
+						if (j == playerIndex - 1) {
+							clockCounts[j] += clockBonuses[j];
+						}
+					}
+				}
+
+				// Switch players and restart.
+				playing = -1;
+				playerIndex = playerIndex >= 2 ? 1 : 2;
+
+			// Holding button.
+			} else if (cubeJoypadMotion()) {
+				playing = 1;
+				playerIndex = playerIndex == 0 ? -1 : playerIndex;
+			}
+		}
+	}
+})();</script><!--/Main-->
+</body>
+</html>

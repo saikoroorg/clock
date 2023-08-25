@@ -1,11 +1,11 @@
 // Web app manifest for progressive web app.
 const manifest = {
-	"name": "Clock",
-	"short_name": "clock",
-	"version": "0.8.30820",
+	"name": "clock",
+	"short_name": "Clock",
+	"version": "0.8.30825",
 	"author": "saikoro.org",
-	"background_color": "#fff",
-	"theme_color": "#fff",
+	"background_color": "#ccc",
+	"theme_color": "#ccc",
 	"icons": [{
 		"src": "./icon.svg",
 		"sizes": "300x300",
@@ -16,8 +16,10 @@ const manifest = {
 		"type": "image/png"
 	}],
 	"start_url": "./?app=1",
-	"scope": "/clock/",
 	"display": "standalone",
+	"service": "./manifest.js",
+	"scope": "/clock/",
+	"contents": ["./"],
 	"json": "manifest.json"
 };
 
@@ -29,35 +31,39 @@ if (!self || !self.registration) {
 		console.log("ServiceWorker:" + manifest.service);
 		(async()=>{
 			if (navigator.serviceWorker) {
-				await navigator.serviceWorker.register(manifest.json);
+				await navigator.serviceWorker.register(manifest.service, {"scope": manifest.scope});
 			}
 		})();
 	}
 
 	// Set manifest.json.
-	let head = document.getElementsByTagName("head")[0];
-	let link = document.createElement("link");
-	link.setAttribute("rel", "manifest");
-	link.setAttribute("href", manifest.json);
-	head.appendChild(link);
+	let head = document.querySelector("head");
+	if (head) {
+		let link = document.createElement("link");
+		if (link) {
+			link.setAttribute("rel", "manifest");
+			link.setAttribute("href", manifest.json);
+			head.appendChild(link);
+		}
+	}
 
 	// Set manifest parameters.
 	let title = document.querySelector("title");
-	if (title && manifest.name) {
-		title.innerText = manifest.name;
+	if (title && manifest.short_name) {
+		title.innerText = manifest.short_name;
 	}
-	title = document.querySelector("#title");
-	if (title && manifest.name) {
-		title.innerText = manifest.name;
+	title = document.querySelector(".title");
+	if (title && manifest.short_name) {
+		title.innerText = manifest.short_name;
 	}
-	let author = document.querySelector("#author");
+	let author = document.querySelector(".author");
 	if (author && manifest.author) {
 		author.innerText = manifest.author;
-		if (manifest.short_name) {
-			author.innerText += "/" + manifest.short_name;
+		if (manifest.name) {
+			author.innerText += "/" + manifest.name;
 		}
 	}
-	let version = document.querySelector("#version");
+	let version = document.querySelector(".version");
 	if (version && manifest.version) {
 		version.innerText = "#" + manifest.version.substr(-4);
 	}
@@ -99,7 +105,7 @@ if (!self || !self.registration) {
 
 		console.log("Request:" + reqCloned.url);
 
-		if (reqCloned.url.match(manifestjson + "$")) {
+		if (reqCloned.url.match(manifest.json + "$")) {
 
 			console.log("Manifest:" + JSON.stringify(manifest));
 

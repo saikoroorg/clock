@@ -43,6 +43,14 @@ small {
 	background-color: #ccc;
 	opacity: 1;
 }
+.screen {
+	width: 100%; height: 100%; left: 0; top: 0;
+	display: flex; display: -webkit-flex;
+	flex-direction: column; -webkit-flex-direction: column;
+	justify-content: center; -webkit-justify-content: center;
+	align-items: center; -webkit-align-items: center;
+	background-color: #888;
+}
 #footer {
 	width: 95%; margin: 0px;
 	flex: 0 1 auto;
@@ -126,6 +134,13 @@ small {
 		font-size: 8px;
 	}
 }
+@media (min-width: 600px) {
+	#contents {
+		flex-direction: row; -webkit-flex-direction: row;
+		justify-content: center; -webkit-justify-content: center;
+		align-items: center; -webkit-align-items: center;
+	}
+}
 </style>
 </head>
 <body>
@@ -140,7 +155,10 @@ small {
 			<a class="white" id="changePlayerButton" href="javascript:changePlayer();">x2</a>
 		</div>
 	</h1>
-	<div id="contents" class="cubeScreen"></div>
+	<div id="contents">
+		<div class="screen" id="screen1"></div>
+		<div class="screen" id="screen2"></div>
+	</div>
 	<h6 id="footer">
 		<div class="author">.</div>
 		<div class="version">.</div>
@@ -241,7 +259,13 @@ small {
 <!--Main--><script>(async()=>{
 
 	// Resize screen.
-	cubeResizeScreen(80, 120);
+	const screenMax = 2;
+	var screens = [], joypads = [];
+	for (let j = screenMax - 1; j >= 0; j--) {
+		screens[j] = cubeScreen("screen", 40, 40);
+		joypads[j] = cubeJoypad(screens[j]);
+	}
+	//cubeResizeScreen(80, 120);
 
 	// Player.
 	//const playerMax = 2; // Maximum player count.
@@ -285,6 +309,7 @@ small {
 	NumberSprite = class {
 		constructor() {
 			this.sprites = []; // Sprites.
+			this.screen = null; // Target screen.
 			this.length = 0; // Sprite length.
 			this.center = cubeVector(); // Center position.
 			this.width = 0; // Width of sprite.
@@ -297,7 +322,7 @@ small {
 	var numbers = [];
 	for (let j = 0; j < buttonMax; j++) {
 		numbers[j] = new NumberSprite();
-		for (var i = 0; i < numberMax; i++) {
+		for (let i = 0; i < numberMax; i++) {
 			numbers[j].sprites[i] = await cubeSprite("image.svg", 40, 40);
 		}
 	}
@@ -318,61 +343,73 @@ small {
 			// Reset player states.
 			playerCount = player;
 			playerIndex = 0;
-			for (var j = 0; j < playerCount; j++) {
+			for (let j = 0; j < playerCount; j++) {
 				players[j].count = players[j].current = count;
 				players[j].addition = addition;
 				players[j].bonus = bonus;
 			}
 
 			// Reset layouts.
-			let size = cubeScreenSize();
+			let sizes = [];
+			for (let j = 0; j < screenMax; j++) {
+				sizes[j] = cubeScreenSize(screens[j]);
+			}
 			if (playerCount <= 1) {
-				numbers[0].center.x = size.x / 2;
-				numbers[0].center.y = size.y / 2;
-				numbers[0].width = size.x * 0.8;
+				numbers[0].screen = screens[0];
+				numbers[0].center.x = sizes[0].x / 2;
+				numbers[0].center.y = sizes[0].y / 2;
+				numbers[0].width = sizes[0].x * 0.8;
+				numbers[0].angle = 0;
 				numbers[0].angle = 0;
 
 			} else if (playerCount == 2) {
-				numbers[0].center.x = size.x / 2;
-				numbers[0].center.y = size.y * 3 / 4;
-				numbers[0].width = size.x * 0.8;
+				numbers[0].screen = screens[0];
+				numbers[0].center.x = sizes[0].x / 2;
+				numbers[0].center.y = sizes[0].y / 2;
+				numbers[0].width = sizes[0].x * 0.8;
 				numbers[0].angle = 0;
-				numbers[1].center.x = size.x / 2;
-				numbers[1].center.y = size.y * 1 / 4;
-				numbers[1].width = size.x * 0.8;
+				numbers[1].screen = screens[1];
+				numbers[1].center.x = sizes[1].x / 2;
+				numbers[1].center.y = sizes[1].y / 2;
+				numbers[1].width = sizes[1].x * 0.8;
 				numbers[1].angle = 180;
 
 			} else if (playerCount <= 4) {
+				numbers[0].screen = screens[0];
+				numbers[0].center.x = sizes[0].x / 2;
+				numbers[0].center.y = sizes[0].y / 2;
+				numbers[0].width = sizes[0].x * 0.8;
+				numbers[0].angle = 0;
 				for (let j = 0; j < playerCount; j++) {
-					numbers[j].center.x = size.x * (j + 1) / (playerCount + 1);
-					numbers[j].center.y = size.y * 1 / 4;
-					numbers[j].width = size.x * 0.8 / playerCount;
-					numbers[j].angle = 0;
+					numbers[j + 1].screen = screens[1];
+					numbers[j + 1].center.x = sizes[1].x * (j + 1) / (playerCount + 1);
+					numbers[j + 1].center.y = sizes[1].y / 2;
+					numbers[j + 1].width = sizes[1].x * 0.8 / playerCount;
+					numbers[j + 1].angle = 0;
 				}
-				numbers[playerCount].center.x = size.x / 2;
-				numbers[playerCount].center.y = size.y * 3 / 4;
-				numbers[playerCount].width = size.x * 0.8;
-				numbers[playerCount].angle = 0;
 
 			} else {
+				numbers[0].screen = screens[0];
+				numbers[0].center.x = sizes[0].x / 2;
+				numbers[0].center.y = sizes[0].y / 2;
+				numbers[0].width = sizes[0].x * 0.8;
+				numbers[0].angle = 0;
 				let playerCount2 = cubeDiv(playerCount, 2);
 				let playerCount1 = playerCount - playerCount2;
 				for (let j = 0; j < playerCount1; j++) {
-					numbers[j].center.x = size.x * (j + 1) / (playerCount1 + 1);
-					numbers[j].center.y = size.y * 1 / 6;
-					numbers[j].width = size.x * 0.8 / playerCount1;
-					numbers[j].angle = 0;
+					numbers[j + 1].screen = screens[1];
+					numbers[j + 1].center.x = sizes[1].x * (j + 1) / (playerCount1 + 1);
+					numbers[j + 1].center.y = sizes[1].y * 1 / 3;
+					numbers[j + 1].width = sizes[1].x * 0.8 / playerCount1;
+					numbers[j + 1].angle = 0;
 				}
 				for (let j = playerCount1; j < playerCount; j++) {
-					numbers[j].center.x = size.x * (j - playerCount1 + 1) / (playerCount2 + 1);
-					numbers[j].center.y = size.y * 2 / 6;
-					numbers[j].width = size.x * 0.8 / playerCount1;
-					numbers[j].angle = 0;
+					numbers[j + 1].screen = screens[1];
+					numbers[j + 1].center.x = sizes[1].x * (j - playerCount1 + 1) / (playerCount2 + 1);
+					numbers[j + 1].center.y = sizes[1].y * 2 / 3;
+					numbers[j + 1].width = sizes[1].x * 0.8 / playerCount1;
+					numbers[j + 1].angle = 0;
 				}
-				numbers[playerCount].center.x = size.x / 2;
-				numbers[playerCount].center.y = size.y * 3 / 4;
-				numbers[playerCount].width = size.x * 0.8;
-				numbers[playerCount].angle = 0;
 			}
 		}
 
@@ -428,11 +465,23 @@ small {
 				}
 
 				// Time separator.
-				if (!waiting && !timeout && j == playerIndex && cubeMod(spendTime, 1000) >= 500) {
-					players[j].frames[players[j].length] = 0;
-				} else {
-					players[j].frames[players[j].length] = 22;
+				let flashing = false;
+				if (!waiting && !timeout && j == playerIndex) {
+
+					// Count down on main time count.
+					if (players[j].count > 0) {
+						if (cubeMod(players[j].current * 1000, 1000) < 500) {
+							flashing = true;
+						}
+
+					// Count up on additional time count.
+					} else {
+						if (cubeMod(players[j].current * 1000, 1000) >= 500) {
+							flashing = true;
+						}
+					}
 				}
+				players[j].frames[players[j].length] = flashing ? 0 : 22;
 				players[j].length++;
 
 				// Minute portion of the playing time.
@@ -456,9 +505,6 @@ small {
 				}
 			}
 
-			// Reset screen.
-			cubeClear();
-
 			// Update button sprites.
 			let p = playing >= 0 && playing < 6 ? 6 - playing : 0;
 			for (let k = 0; k < buttonMax; k++) {
@@ -470,7 +516,7 @@ small {
 						cubeAnimate(25, buttons[k].sprite);
 						if (k == playerIndex) {
 							cubeDilute(1 - 0.04 * p, buttons[k].sprite);
-							cubeExpand(s - 0.04 * p, buttons[k].sprite);
+							cubeExpand(s - 0.02 * p, buttons[k].sprite);
 							cubeMove(numbers[k].center.x, numbers[k].center.y, buttons[k].sprite);
 						} else if (!waiting) {
 							cubeDilute(0.5 - 0.02 * p, buttons[k].sprite);
@@ -490,13 +536,13 @@ small {
 					if (k < playerCount + 1) {
 						let s = numbers[k].width * 0.023;
 						cubeAnimate(25, buttons[k].sprite);
-						if (k == playerCount) {
+						if (k == 0) {
 							cubeDilute(1 - 0.04 * p, buttons[k].sprite);
-							cubeExpand(s - 0.04 * p, buttons[k].sprite);
+							cubeExpand(s - 0.02 * p, buttons[k].sprite);
 							cubeMove(numbers[k].center.x, numbers[k].center.y, buttons[k].sprite);
-						} else if (!waiting && k == playerIndex) {
+						} else if (!waiting && k == playerIndex + 1) {
 							cubeDilute(0.8 - 0.06 * p, buttons[k].sprite);
-							cubeExpand(s - 0.01 * p, buttons[k].sprite);
+							cubeExpand(s - 0.005 * p, buttons[k].sprite);
 							cubeMove(numbers[k].center.x, numbers[k].center.y, buttons[k].sprite);
 						} else {
 							cubeDilute(0.2, buttons[k].sprite);
@@ -511,16 +557,22 @@ small {
 
 			// Update number sprites.
 			for (let j = 0; j < buttonMax; j++) {
+				let k = j;
 				if (playerCount >= 3 && j < playerCount + 1) {
-					numbers[j].length = players[j < playerCount ? j : playerIndex].length;
+					if (j == 0) {
+						k = playerIndex;
+					} else {
+						k = j - 1;
+					}
+					numbers[j].length = players[k].length;
 				} else if (j < playerCount) {
-					numbers[j].length = players[j < playerCount ? j : playerIndex].length;
+					numbers[j].length = players[k].length;
 				} else {
 					numbers[j].length = 0;
 				}
 				for (let i = 0; i < numberMax; i++) {
 					if (j < playerCount + 1 && i < numbers[j].length) {
-						cubeAnimate(players[j < playerCount ? j : playerIndex].frames[i], numbers[j].sprites[i]);
+						cubeAnimate(players[k].frames[i], numbers[j].sprites[i]);
 						let s = numbers[j].width * 0.04, sx = 0;
 						cubeExpand(s / (numbers[j].length + 1), numbers[j].sprites[i]);
 						cubeRotate(numbers[j].angle, numbers[j].sprites[i]);
@@ -538,23 +590,29 @@ small {
 
 			// Draw button sprites.
 			for (let k = 0; k < buttonMax; k++) {
-				cubeDraw(buttons[k].sprite);
+				cubeDraw(buttons[k].sprite, screens[k > 0 ? 1 : 0]);
 			}
 
 			// Draw number sprites.
 			for (let j = 0; j < playerCount + 1; j++) {
 				for (let i = 0; i < numbers[j].length; i++) {
-					cubeDraw(numbers[j].sprites[i]);
+					cubeDraw(numbers[j].sprites[i], numbers[j].screen);
 				}
 			}
 
 			// Wait for input.
-			await cubeReadJoypad(10);
+			await cubeReadJoypad(10, joypads[0]);
+			await cubeReadJoypad(0, joypads[1]);
 
 			if (!timeout) {
 
+				let action = (playerCount == 2 && !waiting) ? cubeJoypadAction(joypads[playerIndex]) :
+					cubeJoypadAction(joypads[0]) || cubeJoypadAction(joypads[1]);
+				let motion = (playerCount == 2 && !waiting) ? cubeJoypadMotion(joypads[playerIndex]) :
+					cubeJoypadMotion(joypads[0]) || cubeJoypadMotion(joypads[1]);
+
 				// Check trigger button.
-				if (cubeJoypadAction()) {
+				if (action) {
 
 					// Update time count on turn end.
 					if (!waiting && players[playerIndex].count > 0) {
@@ -566,6 +624,19 @@ small {
 					if (waiting) {
 						waiting = false;
 
+						// Start from opposite side on 2 players mode.
+						if (playerCount == 2) {
+							if (cubeJoypadAction(joypads[0])) {
+								playerIndex = 1;
+							} else {
+								playerIndex = 0;
+							}
+						}
+
+					// Pause on solo mode.
+					} else if (playerCount <= 1) {
+						waiting = true;
+
 					// Switch players and restart.
 					} else {
 						playerIndex = cubeMod(playerIndex + 1, playerCount);
@@ -574,8 +645,19 @@ small {
 					playing = -1;
 
 				// Check holding button.
-				} else if (cubeJoypadMotion()) {
+				} else if (motion) {
 					playing = 1;
+
+					// Waiting to start from opposite side on 2 players mode.
+					if (waiting) {
+						if (playerCount == 2) {
+							if (cubeJoypadMotion(joypads[0])) {
+								playerIndex = 0;
+							} else {
+								playerIndex = 1;
+							}
+						}
+					}
 				}
 			}
 		}

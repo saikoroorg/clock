@@ -2,7 +2,7 @@
 const manifest = {
 	"name": "clock",
 	"short_name": "Clock",
-	"version": "0.8.30825",
+	"version": "0.8.30827",
 	"author": "saikoro.org",
 	"background_color": "#ccc",
 	"theme_color": "#ccc",

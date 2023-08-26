@@ -5,11 +5,12 @@
 var cube = cube || {};
 
 /* VERSION/ *****************************/
-cube.version = "0.8.65";
-cube.timestamp = "20608";
+cube.version = "0.8.66";
+cube.timestamp = "30827";
 // 20606 : sprite member name changes: screen from sprite. parent from screen.
 // 20607 : use classList.contains instead of contains on sprite.enable method.
 // 20608 : fix bug: classList.contains -> contains on enable method.
+// 30827 : fix bug: screens.push(this.screen) -> screens.push(screens[i]).
 /************************************* /VERSION*
 
 
@@ -1225,7 +1226,7 @@ cube.Screen = class {
 
 						// Found unused screen.
 						root = screens[i];
-						cube.Screen.manager().screens.push(this.screen);
+						cube.Screen.manager().screens.push(screens[i]);
 						break;
 					}
 				}

@@ -1,0 +1,19 @@
+{
+	"name": "clock",
+	"short_name": "Clock",
+	"version": "0.8.30828",
+	"author": "saikoro.org",
+	"background_color": "#ccc",
+	"theme_color": "#ccc",
+	"icons": [{
+		"src": "./icon.svg",
+		"sizes": "300x300",
+		"type": "image/svg"
+	},{
+		"src": "./icon.png",
+		"sizes": "192x192",
+		"type": "image/png"
+	}],
+	"display": "standalone",
+	"start_url": "./?app=1"
+}

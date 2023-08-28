@@ -2,7 +2,7 @@
 const manifest = {
 	"name": "clock",
 	"short_name": "Clock",
-	"version": "0.8.30827",
+	"version": "0.8.30828",
 	"author": "saikoro.org",
 	"background_color": "#ccc",
 	"theme_color": "#ccc",
@@ -15,8 +15,8 @@ const manifest = {
 		"sizes": "192x192",
 		"type": "image/png"
 	}],
-	"start_url": "./?app=1",
 	"display": "standalone",
+	"start_url": "./?app=1",
 	"service": "./manifest.js",
 	"scope": "/clock/",
 	"contents": ["./"],
@@ -31,13 +31,13 @@ if (!self || !self.registration) {
 		console.log("ServiceWorker:" + manifest.service);
 		(async()=>{
 			if (navigator.serviceWorker) {
-				await navigator.serviceWorker.register(manifest.service, {"scope": manifest.scope});
+				await navigator.serviceWorker.register(manifest.service);
 			}
 		})();
 	}
 
 	// Set manifest.json.
-	let head = document.querySelector("head");
+	/*let head = document.querySelector("head");
 	if (head) {
 		let link = document.createElement("link");
 		if (link) {
@@ -45,7 +45,7 @@ if (!self || !self.registration) {
 			link.setAttribute("href", manifest.json);
 			head.appendChild(link);
 		}
-	}
+	}*/
 
 	// Set manifest parameters.
 	let title = document.querySelector("title");
@@ -105,7 +105,7 @@ if (!self || !self.registration) {
 
 		console.log("Request:" + reqCloned.url);
 
-		if (reqCloned.url.match(manifest.json + "$")) {
+		/*if (reqCloned.url.match(manifest.json + "$")) {
 
 			console.log("Manifest:" + JSON.stringify(manifest));
 
@@ -115,7 +115,7 @@ if (!self || !self.registration) {
 			evt.respondWith(res);
 
 		// Returns the cache file that matches the request.
-		} else {
+		} else {*/
 			evt.respondWith(caches.match(reqCloned, {ignoreSearch: true}).then((res) => {
 
 				// Fetch if not found.
@@ -133,6 +133,6 @@ if (!self || !self.registration) {
 					return res;
 				});
 			}));
-		}
+		//}
 	});
 }

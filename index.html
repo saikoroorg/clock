@@ -2,7 +2,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1">
-<title></title>
+<title>Clock</title>
 <link rel="icon" type="image/svg" href="icon.svg">
 <link rel="apple-touch-icon" href="icon.png" sizes="192x192">
 <link rel="manifest" href="manifest.json">
@@ -12,11 +12,8 @@ body {
 	background-color: #fff;
 }
 a {
-	color: #000;
+	color: #ccc;
 	text-decoration: none;
-}
-small {
-	font-size: 50%;
 }
 #container {
 	width: 100%; height: 100%;
@@ -32,7 +29,6 @@ small {
 	flex-direction: row; -webkit-flex-direction: row;
 	justify-content: space-between; -webkit-justify-content: space-between;
 	align-items: center; -webkit-align-items: center;
-	opacity: 1;
 }
 #contents {
 	width: 95%; height: 90%;
@@ -42,7 +38,6 @@ small {
 	justify-content: center; -webkit-justify-content: center;
 	align-items: center; -webkit-align-items: center;
 	background-color: #ccc;
-	opacity: 1;
 }
 .screen {
 	width: 100%; height: 100%; left: 0; top: 0;
@@ -59,10 +54,8 @@ small {
 	flex-direction: row; -webkit-flex-direction: row;
 	justify-content: flex-end; -webkit-justify-content: flex-end;
 	align-items: center; -webkit-align-items: center;
-	opacity: 0.1;
-}
-.author,.version {
 	font-size: 12px;
+	color: #eee;
 }
 .logo {
 	width: 160px; height: 60px; margin: 0px 16px;
@@ -70,42 +63,56 @@ small {
 	flex-direction: row; -webkit-flex-direction: row;
 	justify-content: flex-start; -webkit-justify-content: flex-start;
 	align-items: center; -webkit-align-items: center;
-	font-size: 24px;
 }
 .logo .icon {
 	width: 40px; height: 40px; padding: 10px; margin-left: -28px;
 }
 .logo .title {
-	user-select: none;
+	font-size: 24px;
+	color: #000;
 }
 .menu {
-	width: 80px; height: 40px; margin: 5px 0px;
+	width: 120px; height: 40px; margin: 5px 0px;
 	display: flex; display: -webkit-flex;
 	flex-direction: row; -webkit-flex-direction: row;
 	justify-content: space-between; -webkit-justify-content: space-between;
 	align-items: flex-end; -webkit-align-items: flex-end;
-	background-color: #ccc;
 }
-.menu a {
-	width: 40px; height: 40px;
+.menu .item {
+	width: 40px; height: 40px; margin: 0px;
 	display: flex; display: -webkit-flex;
 	flex-direction: column; -webkit-flex-direction: column;
 	justify-content: center; -webkit-justify-content: center;
 	align-items: center; -webkit-align-items: center;
 	font-size: 16px;
-	text-decoration: none;
-	transform: scale(1);
 }
-.menu .black {
+.menu .subitem {
+	width: 40px; height: 20px; margin-top: -10px; margin-left: -40px;
+	display: flex; display: -webkit-flex;
+	flex-direction: column; -webkit-flex-direction: column;
+	justify-content: center; -webkit-justify-content: center;
+	align-items: center; -webkit-align-items: center;
+	font-size: 10px;
+}
+.menu .item.dark {
 	background-color: #000;
 	color: #fff;
 }
-.menu .white {
+.menu .subitem.dark {
+	background-color: none;
+	color: #fff;
+}
+.menu .light {;
+	background-color: #ccc;
+	color: #000;
+}
+.menu .subitem.light {
 	background-color: none;
 	color: #000;
 }
-.menu small {
-	font-size: 10px;
+.menu a {
+	transform: scale(1);
+	opacity: 1;
 }
 .menu a:hover {
 	transform: scale(1);
@@ -129,11 +136,13 @@ small {
 	<h1 id="header">
 		<div class="logo">
 			<!--img class="icon" src="icon.svg"/!-->
-			<a class="title"></a>
+			<a class="title" href="?">Clock</a>
 		</div>
 		<div class="menu">
-			<a class="black" id="changeCountButton" href="javascript:changeCount();">10</a>
-			<a class="white" id="changePlayerButton" href="javascript:changePlayer();">x2</a>
+			<a class="item" id="playerLabel" href="javascript:changePlayer(1);">x2</a>
+			<a class="subitem" href="javascript:changePlayer(-1);">-</a>
+			<a class="item dark" id="countLabel" href="javascript:changeCount();">0</a>
+			<a class="item light" id="optionLabel" href="javascript:changeOption();">-</a>
 		</div>
 	</h1>
 	<div id="contents">
@@ -141,12 +150,13 @@ small {
 		<div class="screen" id="screen2"></div>
 	</div>
 	<h6 id="footer">
-		<div class="author">.</div>
-		<div class="version">.</div>
+		<div class="author"><!--$author--></div>
+		<div class="version"><!--$version--></div>
+		.
 	</h6>
 </div>
 <script>console.log = () => {};</script>
-<script src="manifest.js"></script>
+<script src="background.js"></script>
 <script src="cube-api-0.8.js"></script>
 <!--Menu--><script>
 	var player = 2; // Player count.
@@ -165,22 +175,28 @@ small {
 		count = c > countMax ? countMax : c > 0 ? c : 0;
 		addition = a > countMax ? countMax : a > 0 ? a : 0;
 		bonus = b > 99 ? 99 : b > 0 ? b : 0;
-		player = p > playerMax ? playerMax : p > 0 ? p : player;
+		player = p > playerMax ? playerMax : p > 0 ? p : 2;
 
 		// Reset clock information.
-		var e = document.getElementById("changeCountButton");
+		var e = document.getElementById("countLabel");
 		if (e) {
-			if (count > 0 && addition > 0) {
-				e.innerHTML = "" + (count / 60) + " <small>-" + addition + "</small>";
-			} else if (addition > 0) {
-				e.innerHTML = "-" + addition + "";
-			} else if (bonus > 0) {
-				e.innerHTML = "" + (count / 60) + " <small>+" + bonus + "</small>";
+			if (count > 0) {
+				e.innerHTML = "" + (count / 60);
 			} else {
-				e.innerHTML = "" + (count / 60) + "";
+				e.innerHTML = "0";
 			}
 		}
-		e = document.getElementById("changePlayerButton");
+		e = document.getElementById("optionLabel");
+		if (e) {
+			if (addition > 0) {
+				e.innerHTML = "-" + addition;
+			} else if (bonus > 0) {
+				e.innerHTML = "+" + bonus;
+			} else {
+				e.innerHTML = "-";
+			}
+		}
+		e = document.getElementById("playerLabel");
 		if (e) {
 			e.innerHTML = "x" + player;
 		}
@@ -188,54 +204,73 @@ small {
 		playing = -2; // Replay.
 	};
 
-	// Change couont.
+	// Change count.
 	function changeCount() {
 		if (!locked) {
-			if (count > 5 * 60) {
-				setClock(5 * 60, 0, 5, player); // 5m + 5s bonus time (Fisher)
-			} else if (count > 0) {
-				setClock(0, 10, 0, player); // 10s (Byoyomi)
-			} else if (addition > 0) {
-				setClock(0, 0, 0, player); // 0 (Free)
+			if (count <  5 * 60) {
+				setClock(5 * 60, addition, bonus, player); // 5m
+			} else if (count < 10 * 60) {
+				setClock(10 * 60, addition, bonus, player); // 10m
+			} else if (count < 15 * 60) {
+				setClock(15 * 60, addition, bonus, player); // 15m
+			} else if (count < 20 * 60) {
+				setClock(20 * 60, addition, bonus, player); // 20m
 			} else {
-				setClock(10 * 60, 30, 0, player); // 10m + 30s additional time (Byoyomi)
+				setClock(0, addition, bonus, player);
+			}
+		}
+	};
+
+	// Change option.
+	function changeOption() {
+		if (!locked) {
+			if (addition <= 0 && bonus < 5) {
+				setClock(count, 0, 5, player); // +5s bonus time (Fischer)
+			} else if (addition <= 0 && bonus < 10) {
+				setClock(count, 0, 10, player); // +10s bonus time (Fischer)
+			} else if (addition < 10) {
+				setClock(count, 10, 0, player); // -10s additional time (Byoyomi)
+			} else if (addition < 30) {
+				setClock(count, 30, 0, player); // -30s additional time (Byoyomi)
+			} else {
+				setClock(count, 0, 0, player);
 			}
 		}
 	};
 
 	// Change player.
-	function changePlayer() {
+	function changePlayer(x) {
 		if (!locked) {
-			setClock(count, addition, bonus, cubeMod(player, playerMax) + 1);
+			setClock(count, addition, bonus, player + x);
 		}
 	};
 
 	// Get query parameters.
 	let params = cubeParamNumbers();
 
-	// Additional time (Byoyomi) mode.
+	// Additional time mode. (Byoyomi)
 	if (cubeParamContains(0, "a")) {
 		setClock(params[0] * 60, params[1], 0, params[2]);
 		locked = true;
 
-	// Bonus time (Fischer) mode.
+	// Bonus time mode. (Fischer)
 	} else if (cubeParamContains(0, "b")) {
 		setClock(params[0] * 60, 0, params[1], params[2]);
 		locked = true;
 
-	// Multi player mode.
+	// Simple multi players mode. (Kiremake)
 	} else if (cubeParamContains(0, "x")) {
 		setClock(params[0] * 60, 0, 0, params[1]);
 		locked = true;
 
-	// Simple (Kiremake) mode.
+	// Simple 2 players mode. (Kiremake)
 	} else if (params[0] > 0) {
 		setClock(params[0] * 60, 0, 0, 2);
 		locked = true;
 
 	// Default.
 	} else {
-		setClock(10 * 60, 30, 0, 2);
+		setClock(10 * 60, 0, 0, 2);
 	}
 
 </script><!--/Menu-->
@@ -414,7 +449,7 @@ small {
 				if (players[k].count > 0) {
 					players[k].current = players[k].count - players[k].consumed;
 					if (players[k].current <= 0) {
-						players[k].current = players[k].count = 0;
+						players[k].current = players[k].count = players[k].consumed = 0;
 
 						// Start additional time.
 						if (players[k].addition > 0) {
@@ -471,14 +506,8 @@ small {
 					}
 				}
 
-				// Colon mark for main time count.
-				if (players[j].count > 0) {
-					players[j].frames[players[j].length] = flashing ? 0 : 22;
-
-				// Period mark for additional time count.
-				} else {
-					players[j].frames[players[j].length] = flashing ? 0 : 23;
-				}
+				// Colon mark.
+				players[j].frames[players[j].length] = flashing ? 0 : 12;
 				players[j].length++;
 
 				// Minute portion of the playing time.
@@ -515,7 +544,7 @@ small {
 				}
 
 				// Time separator for milliseconds.
-				players[1].frames[players[1].length] = 23;
+				players[1].frames[players[1].length] = 11;
 				players[1].length++;
 			}
 
@@ -527,16 +556,16 @@ small {
 				if (playerCount <= 1) {
 					if (k < 2) {
 						let s = numbers[k].width * 0.025;
-						cubeAnimate(25, buttons[k].sprite);
+						cubeAnimate(15, buttons[k].sprite);
 
 						// Waiting.
 						if (waiting) {
-							if (playerIndex > 0) {
-								cubeDilute(0.8, buttons[k].sprite);
+							if (playerIndex >= 0) {
+								cubeDilute(1, buttons[k].sprite);
 								cubeExpand(s - 0.02 * p, buttons[k].sprite);
 								cubeMove(numbers[k].center.x, numbers[k].center.y, buttons[k].sprite);
 							} else {
-								cubeDilute(0.8, buttons[k].sprite);
+								cubeDilute(1, buttons[k].sprite);
 								cubeExpand(s, buttons[k].sprite);
 								cubeMove(numbers[k].center.x, numbers[k].center.y, buttons[k].sprite);
 							}
@@ -561,16 +590,20 @@ small {
 				} else if (playerCount == 2) {
 					if (k < 2) {
 						let s = numbers[k].width * 0.025;
-						cubeAnimate(25, buttons[k].sprite);
+						cubeAnimate(15, buttons[k].sprite);
 
 						// Waiting.
 						if (waiting) {
 							if (k == playerIndex) {
-								cubeDilute(0.8, buttons[k].sprite);
+								cubeDilute(1, buttons[k].sprite);
 								cubeExpand(s - 0.02 * p, buttons[k].sprite);
 								cubeMove(numbers[k].center.x, numbers[k].center.y, buttons[k].sprite);
+							} else if (playerIndex < 0) {
+								cubeDilute(1, buttons[k].sprite);
+								cubeExpand(s, buttons[k].sprite);
+								cubeMove(numbers[k].center.x, numbers[k].center.y, buttons[k].sprite);
 							} else {
-								cubeDilute(0.8, buttons[k].sprite);
+								cubeDilute(0.2, buttons[k].sprite);
 								cubeExpand(s, buttons[k].sprite);
 								cubeMove(numbers[k].center.x, numbers[k].center.y, buttons[k].sprite);
 							}
@@ -595,17 +628,17 @@ small {
 				} else {
 					if (k < playerCount + 1) {
 						let s = numbers[k].width * (k > 0 ? 0.023 : 0.025);
-						cubeAnimate(25, buttons[k].sprite);
+						cubeAnimate(15, buttons[k].sprite);
 
 						// Waiting.
 						if (waiting) {
 							if (k == 0) {
 								if (playerIndex >= 0) {
-									cubeDilute(0.8, buttons[k].sprite);
+									cubeDilute(1, buttons[k].sprite);
 									cubeExpand(s - 0.02 * p, buttons[k].sprite);
 									cubeMove(numbers[k].center.x, numbers[k].center.y, buttons[k].sprite);
 								} else {
-									cubeDilute(0.8, buttons[k].sprite);
+									cubeDilute(1, buttons[k].sprite);
 									cubeExpand(s, buttons[k].sprite);
 									cubeMove(numbers[k].center.x, numbers[k].center.y, buttons[k].sprite);
 								}
@@ -732,7 +765,7 @@ small {
 
 						// Update time count on turn end.
 						if (players[playerIndex].count > 0) {
-							let c = players[playerIndex].count - players[playerIndex].consumed + players[playerIndex].bonus;
+							let c = players[playerIndex].count - players[playerIndex].consumed + (!pausing ? players[playerIndex].bonus : 0);
 							players[playerIndex].current = players[playerIndex].count = c > countMax ? countMax * 60 : c > 0 ? c : 0;
 							players[playerIndex].consumed = 0;
 

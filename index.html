@@ -40,11 +40,7 @@ a {
 	background-color: #ccc;
 }
 .screen {
-	width: 100%; height: 100%; left: 0; top: 0;
-	display: flex; display: -webkit-flex;
-	flex-direction: column; -webkit-flex-direction: column;
-	justify-content: center; -webkit-justify-content: center;
-	align-items: center; -webkit-align-items: center;
+	width: 100%; height: 100%;
 	background-color: #ccc;
 }
 #footer {
@@ -122,7 +118,7 @@ a {
 	transform: scale(0.9);
 	opacity: 1;
 }
-@media (min-width: 600px) {
+@media (orientation: landscape) {
 	#contents {
 		flex-direction: row; -webkit-flex-direction: row;
 		justify-content: center; -webkit-justify-content: center;
@@ -270,7 +266,7 @@ a {
 
 	// Default.
 	} else {
-		setClock(10 * 60, 0, 0, 2);
+		setClock(0, 10, 0, 2);
 	}
 
 </script><!--/Menu-->
@@ -280,7 +276,7 @@ a {
 	const screenMax = 2;
 	var screens = [], joypads = [];
 	for (let j = screenMax - 1; j >= 0; j--) {
-		screens[j] = cubeScreen("screen", 40, 40);
+		screens[j] = cubeScreen("screen", 40, 30);
 		joypads[j] = cubeJoypad(screens[j]);
 	}
 	//cubeResizeScreen(80, 120);
@@ -349,7 +345,7 @@ a {
 	// Playing states.
 	//var playing = 0; // Playing count.
 	var waiting = true; // Waiting to start flag.
-	var pausing = false; // Pausing to start flag.
+	var pausing = false; // Pausing on pressing.
 	var timeout = false; // Timeout flag.
 	while (true) {
 
@@ -376,16 +372,21 @@ a {
 			for (let j = 0; j < screenMax; j++) {
 				sizes[j] = cubeScreenSize(screens[j]);
 			}
+
+			// 1 Screen for solo player.
 			if (playerCount <= 1) {
-				for (let j = 0; j < 2; j++) {
-					numbers[j].screen = screens[j > 0 ? 0 : 1];
+				cubeEnableScreen(false, screens[1]);
+				for (let j = 0; j < 1; j++) {
+					numbers[j].screen = screens[j];
 					numbers[j].center.x = sizes[j].x / 2;
 					numbers[j].center.y = sizes[j].y / 2;
 					numbers[j].width = sizes[j].x * 0.8;
 					numbers[j].angle = 0;
 				}
 
+			// 2 Screens for 2 players.
 			} else if (playerCount <= 2) {
+				cubeEnableScreen(true, screens[1]);
 				for (let j = 0; j < 2; j++) {
 					numbers[j].screen = screens[j];
 					numbers[j].center.x = sizes[j].x / 2;
@@ -394,7 +395,9 @@ a {
 					numbers[j].angle = 0;
 				}
 
+			// 2 Screens for 3+ players.
 			} else {
+				cubeEnableScreen(true, screens[1]);
 				numbers[0].screen = screens[0];
 				numbers[0].center.x = sizes[0].x / 2;
 				numbers[0].center.y = sizes[0].y / 2;
@@ -442,7 +445,7 @@ a {
 			// Update time count.
 			if (!waiting && !pausing && !timeout) {
 				let k = playerIndex >= 0 ? playerIndex : 0;
-				players[k].consumed += spendTime / 1000; // Chess clock style.
+				players[k].consumed += spendTime / 1000; // Chessclock style.
 				// players[k].consumed += cubeDiv(spendTime, 1000); // Stopwatch style.
 
 				// Main time count.
@@ -532,7 +535,7 @@ a {
 			}
 
 			// Update solo player states.
-			if (playerCount == 1) {
+			/*if (playerCount == 1) {
 				players[1].length = 0;
 
 				// Milliseconds portion of the playing time.
@@ -546,13 +549,13 @@ a {
 				// Time separator for milliseconds.
 				players[1].frames[players[1].length] = 11;
 				players[1].length++;
-			}
+			}*/
 
 			// Update button sprites.
 			let p = playing >= 0 && playing < 6 ? 6 - playing : 0;
 			for (let k = 0; k < buttonMax; k++) {
 
-				// Linked button for solo player.
+				// 1 button for solo player.
 				if (playerCount <= 1) {
 					if (k < 2) {
 						let s = numbers[k].width * 0.025;
@@ -732,22 +735,28 @@ a {
 			// Wait for input.
 			await cubeWait(10);
 
+			// Read input.
+			for (let j = 0; j < screenMax; j++) {
+				await cubeReadJoypad(0, joypads[j]);
+			}
 			if (!timeout) {
-
-				// Read input.
-				for (let j = 0; j < screenMax; j++) {
-					await cubeReadJoypad(0, joypads[j]);
-				}
 				let action = (playerCount == 2 && !waiting) ? cubeJoypadAction(joypads[playerIndex]) :
 					cubeJoypadAction(joypads[0]) || cubeJoypadAction(joypads[1]);
 				let motion = (playerCount == 2 && !waiting) ? cubeJoypadMotion(joypads[playerIndex]) :
 					cubeJoypadMotion(joypads[0]) || cubeJoypadMotion(joypads[1]);
 
-				// Check trigger button.
+				// Check user action.
 				if (action) {
 
+					// Cancel.
+					if (action.z > 0) {
+
+						// Pause.
+						waiting = true;
+						playerIndex = -1;
+
 					// Start.
-					if (waiting) {
+					} else if (waiting) {
 						waiting = false;
 
 						// Start from opposite side on 2 players mode.
@@ -774,9 +783,10 @@ a {
 							players[playerIndex].current = players[playerIndex].consumed = 0;
 						}
 
-						// Pause on solo mode.
+						// Pause for solo player.
 						if (playerCount <= 1) {
-							pausing = !pausing;
+							waiting = true;
+							playerIndex = -1;
 
 						// Switch players.
 						} else {
@@ -785,10 +795,14 @@ a {
 					}
 
 					// Restart.
+					pausing = false;
 					playing = -1;
 
-				// Check holding button.
+				// Check user motion.
 				} else if (motion) {
+
+					// Start pausing.
+					pausing = true;
 					playing = 1;
 
 					// Waiting to start from opposite side on 2 players mode.

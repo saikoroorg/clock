@@ -5,12 +5,13 @@
 var cube = cube || {};
 
 /* VERSION/ *****************************/
-cube.version = "0.8.66";
-cube.timestamp = "30827";
+cube.version = "0.8.67";
+cube.timestamp = "30904";
 // 20606 : sprite member name changes: screen from sprite. parent from screen.
 // 20607 : use classList.contains instead of contains on sprite.enable method.
 // 20608 : fix bug: classList.contains -> contains on enable method.
 // 30827 : fix bug: screens.push(this.screen) -> screens.push(screens[i]).
+// 30904 : enable screen method splits to draw and enable method, set action.z on pressing.
 /************************************* /VERSION*
 
 
@@ -101,7 +102,7 @@ function cubeScreen(name=null, width=0, height=0, unitSize=0) {
 		if (width > 0 && height > 0) {
 			screen.resize(width, height, unitSize);
 		}
-		screen.enable();
+		screen.draw();
 		return screen;
 	}
 	return cube.screen;
@@ -169,7 +170,15 @@ function cubeResizeScreen(width, height, fontSize=0, screen=null) {
 		screen = cube.screen;
 	}
 	screen.resize(width, height, fontSize);
-	screen.enable();
+	screen.draw();
+}
+
+// Enable or disable screen.
+function cubeEnableScreen(flag, screen=null) {
+	if (!screen) {
+		screen = cube.screen;
+	}
+	screen.enable(flag);
 }
 
 // Get screen resolution size.
@@ -1332,8 +1341,13 @@ cube.Screen = class {
 			let sy = this.root.clientHeight / this.size.y;
 			this.scale = Math.min(sx, sy);
 			let t1 = (this.scale * 100) + "%";
-			let t2 = "scale(" + this.scale + ")";
+			let t2 = "translate(-50%,-50%) scale(" + this.scale + ")";
+			this.screen.style.left = "50%";
+			this.screen.style.top = "50%";
 			this.screen.style.transform = t2;
+
+//			this.screen.style.left = this.root.clientWidth / 2;
+//			this.screen.style.top = this.root.clientHeight / 2;
 		}
 
 		// Set font size by unit size.
@@ -1363,7 +1377,9 @@ cube.Screen = class {
 				let sy = this.root.clientHeight / this.size.y;
 				this.scale = Math.min(sx, sy);
 				let t1 = (this.scale * 100) + "%";
-				let t2 = "scale(" + this.scale + ")";
+				let t2 = "translate(-50%,-50%) scale(" + this.scale + ")";
+				this.screen.style.left = "50%";
+				this.screen.style.top = "50%";
 				this.screen.style.transform = t2;
 			}
 
@@ -1375,46 +1391,52 @@ cube.Screen = class {
 		console.log("event:" + evt.type + " scale=" + this.scale + " pos=" + this.pos);
 	}
 
-	// Enable to show or disable to hide.
-	enable(parent=null, enable=true) {
+	// Draw this screen to parent screen.
+	draw(parent=null) {
 		if (this.root != null) {
 			parent = parent != null ? parent.screen : document.body;
-			if (enable) {
-				if (!parent.contains(this.root)) {
-					parent.appendChild(this.root);
-					/*
-					this.root.style.position = "absolute";
-					this.root.style.left = this.pos.x = x;
-					this.root.style.top = this.pos.y = y;
-					if (this.resized) {
-						this.resize(this.size.x, this.size.y);
-					} else {
-						this.screen.style.width = this.size.x = this.root.clientWidth;
-						this.screen.style.height = this.size.y = this.root.clientHeight;
-					}
-					*/
-
-					// Fit screen to parent pane.
-					if (this.root.clientWidth > 0 && this.root.clientHeight > 0) {
-						let sx = this.root.clientWidth / this.size.x;
-						let sy = this.root.clientHeight / this.size.y;
-						this.scale = Math.min(sx, sy);
-						let t1 = (this.scale * 100) + "%";
-						let t2 = "scale(" + this.scale + ")";
-						this.screen.style.transform = t2;
-					}
-
-					// Set abolute pos.
-					let rect = this.screen.getBoundingClientRect();
-					this.pos.x = window.pageXOffset + rect.left;
-					this.pos.y = window.pageYOffset + rect.top;
-
-					console.log("enable: scale=" + this.scale + " pos=" + this.pos);
+			if (!parent.contains(this.root)) {
+				parent.appendChild(this.root);
+				/*
+				this.root.style.position = "absolute";
+				this.root.style.left = this.pos.x = x;
+				this.root.style.top = this.pos.y = y;
+				if (this.resized) {
+					this.resize(this.size.x, this.size.y);
+				} else {
+					this.screen.style.width = this.size.x = this.root.clientWidth;
+					this.screen.style.height = this.size.y = this.root.clientHeight;
 				}
+				*/
+
+				// Fit screen to parent pane.
+				if (this.root.clientWidth > 0 && this.root.clientHeight > 0) {
+					let sx = this.root.clientWidth / this.size.x;
+					let sy = this.root.clientHeight / this.size.y;
+					this.scale = Math.min(sx, sy);
+					let t1 = (this.scale * 100) + "%";
+					let t2 = "scale(" + this.scale + ")";
+					this.screen.style.transform = t2;
+				}
+
+				// Set abolute pos.
+				let rect = this.screen.getBoundingClientRect();
+				this.pos.x = window.pageXOffset + rect.left;
+				this.pos.y = window.pageYOffset + rect.top;
+
+				console.log("draw: scale=" + this.scale + " pos=" + this.pos);
+			}
+		}
+	}
+
+	// Enable to show or disable to hide.
+	enable(flag=true) {
+		if (this.root != null) {
+			if (flag) {
+				this.root.style.display = "block";
+				this.resize(this.size.x, this.size.y);
 			} else {
-				if (parent.contains(this.root)) {
-					parent.removeChild(this.root);
-				}
+				this.root.style.display = "none";
 			}
 		}
 	}
@@ -2212,6 +2234,7 @@ cube.Input = class {
 				// Press timeout or far depth check.
 				if (this.tapTime <= time - timeout || this.points[1].z - this.points[0].z >= depth) {
 					this._dirs[0].add(cube.Dirs.far);
+					this.upEvent = true;
 					//console.log("Press:" + this.tapTime + " " + time);
 
 					// Ignore tap/flick after point reach to far depth.

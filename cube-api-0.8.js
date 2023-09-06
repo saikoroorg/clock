@@ -5,13 +5,14 @@
 var cube = cube || {};
 
 /* VERSION/ *****************************/
-cube.version = "0.8.67";
-cube.timestamp = "30904";
+cube.version = "0.8.68";
+cube.timestamp = "30906";
 // 20606 : sprite member name changes: screen from sprite. parent from screen.
 // 20607 : use classList.contains instead of contains on sprite.enable method.
 // 20608 : fix bug: classList.contains -> contains on enable method.
 // 30827 : fix bug: screens.push(this.screen) -> screens.push(screens[i]).
-// 30904 : enable screen method splits to draw and enable method, set action.z on pressing.
+// 30904 : enable screen method splits to draw and enable method and fix resize method.
+// 30906 : set action.z on pressed/swiped.
 /************************************* /VERSION*
 
 
@@ -1282,7 +1283,11 @@ cube.Screen = class {
 		this.screen.style.justifyContent = "start";
 		this.screen.style.clipPath = "border-box";
 		this.screen.style.imageRendering = "pixelated";
-		window.addEventListener("resize", (evt) => this.onResize(evt));
+
+		// @todo: use observer instead of resize window event.
+		// https://webfrontend.ninja/js-resize-observer/
+		//window.addEventListener("resize", (evt) => this.onResize(evt));
+		new ResizeObserver((entries) => this.onResize()).observe(this.root);
 	}
 
 	// Clone.
@@ -1335,40 +1340,14 @@ cube.Screen = class {
 		this.screen.style.width = this.size.x;
 		this.screen.style.height = this.size.y;
 
-		// Fit screen to parent pane.
-		if (this.root.clientWidth > 0 && this.root.clientHeight > 0) {
-			let sx = this.root.clientWidth / this.size.x;
-			let sy = this.root.clientHeight / this.size.y;
-			this.scale = Math.min(sx, sy);
-			let t1 = (this.scale * 100) + "%";
-			let t2 = "translate(-50%,-50%) scale(" + this.scale + ")";
-			this.screen.style.left = "50%";
-			this.screen.style.top = "50%";
-			this.screen.style.transform = t2;
-
-//			this.screen.style.left = this.root.clientWidth / 2;
-//			this.screen.style.top = this.root.clientHeight / 2;
-		}
-
-		// Set font size by unit size.
-		if (this.size.z > 0) {
-		   this.screen.style.fontFamily = "Courier,monospace,sans-serif";
-		   this.screen.style.fontSize = this.size.z;
-		}
-
-		// Reset abolute pos.
-		let rect = this.screen.getBoundingClientRect();
-		this.pos.x = window.pageXOffset + rect.left;
-		this.pos.y = window.pageYOffset + rect.top;
-
 		this.resized = true;
-		console.log("resize: scale=" + this.scale + " pos=" + this.pos);
+		this.onResize();
 	}
 
 	// Resize event handler.
-	onResize(evt) {
-		evt = evt != null ? evt : window.event;
-		evt.preventDefault();
+	onResize() {
+		//evt = evt != null ? evt : window.event;
+		//evt.preventDefault();
 		if (this.resized) {
 
 			// Fit screen to parent pane.
@@ -1388,7 +1367,7 @@ cube.Screen = class {
 			this.pos.x = window.pageXOffset + rect.left;
 			this.pos.y = window.pageYOffset + rect.top;
 		}
-		console.log("event:" + evt.type + " scale=" + this.scale + " pos=" + this.pos);
+		// console.log("event: scale=" + this.scale + " pos=" + this.pos);
 	}
 
 	// Draw this screen to parent screen.
@@ -1434,7 +1413,7 @@ cube.Screen = class {
 		if (this.root != null) {
 			if (flag) {
 				this.root.style.display = "block";
-				this.resize(this.size.x, this.size.y);
+				this.resize(this.size.x, this.size.y, this.size.z); // @todo: resize all screens.
 			} else {
 				this.root.style.display = "none";
 			}
@@ -2211,20 +2190,21 @@ cube.Input = class {
 				this._dirs[0] = this.pointVecToDirs(vec);
 
 				// Ignore tap after point out of play radius.
-				this.tapTime = time - timeout;
+				this.tapTime = -1;
 
 				// Swipe timeout or far depth check.
-				if (this.flickTime <= time - timeout || this.points[1].z - this.points[0].z >= depth) {
+				if ((this.flickTime > 0 && this.flickTime <= time - timeout) || this.points[1].z - this.points[0].z >= depth) {
 					this._dirs[0].add(cube.Dirs.far);
-					//console.log("Swipe:" + this.flickTime + " " + time);
+					this.upEvent = true; // Set up event for swiped.
+					// console.log("Swipe:" + (time - this.flickTime));
 
 					// Ignore flick after point reach to far depth.
-					this.flickTime = time - timeout;
+					this.flickTime = -1;
 
 				// Flick check.
 				} else if (this.upEvent) {
 					this._dirs[0].add(cube.Dirs.near);
-					//console.log("Flick:" + this.flickTime + " " + time);
+					// console.log("Flick:" + (time - this.flickTime));
 				}
 			} else {
 
@@ -2232,33 +2212,33 @@ cube.Input = class {
 				this._dirs[0] = new cube.Dirs();
 
 				// Press timeout or far depth check.
-				if (this.tapTime <= time - timeout || this.points[1].z - this.points[0].z >= depth) {
+				if ((this.tapTime > 0 && this.tapTime <= time - timeout) || this.points[1].z - this.points[0].z >= depth) {
 					this._dirs[0].add(cube.Dirs.far);
-					this.upEvent = true;
-					//console.log("Press:" + this.tapTime + " " + time);
+					this.upEvent = true; // Set up event for pressed.
+					// console.log("Press:" + (time - this.tapTime));
 
 					// Ignore tap/flick after point reach to far depth.
-					this.tapTime = time - timeout;
-					this.flickTime = time - timeout;
+					this.tapTime = -1;
+					this.flickTime = -1;
 
 				// Tap check.
 				} else if (this.upEvent) {
 					this._dirs[0] = cube.Dirs.near.clone();
-					//console.log("Tap:" + this.tapTime + " " + time);
+					// console.log("Tap:" + (time - this.tapTime));
 				}
 			}
-			//console.log("Mouse/Touch input:" + this.tapTime + " " + time);
+			// console.log("Mouse/Touch input:" + this.tapTime + " " + time);
 		}
 
 		// On down event, only update status.
 		if (this.downEvent) {
-			//console.log("Down Event:" + this._dirs[0].toString() + " " + this.points[1].toString());
+			// console.log("Down Event:" + this._dirs[0].toString() + " " + this.points[1].toString());
 			this._dirs[1] = null;
 			this.downEvent = false;
 
 		// On up event, update status and return dirs.
 		} else if (this.upEvent) {
-			//console.log("Up Event:" + this._dirs[0].toString() + " " + this.points[1].toString());
+			// console.log("Up Event:" + this._dirs[0].toString() + " " + this.points[1].toString());
 
 			this._dirs[1] = this._dirs[0];
 			this.upEvent = false;
@@ -2455,7 +2435,7 @@ cube.Input = class {
 	onScroll(evt) {
 		evt = evt != null ? evt : window.event;
 		evt.preventDefault();
-		console.log("event:" + evt.type)
+		// console.log("event:" + evt.type)
 	}
 }
 

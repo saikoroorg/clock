@@ -151,7 +151,7 @@ a {
 		.
 	</h6>
 </div>
-<script>console.log = () => {};</script>
+<!--script>console.log = () => {};</script!-->
 <script src="background.js"></script>
 <script src="cube-api-0.8.js"></script>
 <!--Menu--><script>
@@ -558,7 +558,7 @@ a {
 				// 1 button for solo player.
 				if (playerCount <= 1) {
 					if (k < 2) {
-						let s = numbers[k].width * 0.025;
+						let s = numbers[k].width * 0.024;
 						cubeAnimate(15, buttons[k].sprite);
 
 						// Waiting.
@@ -745,18 +745,32 @@ a {
 				let motion = (playerCount == 2 && !waiting) ? cubeJoypadMotion(joypads[playerIndex]) :
 					cubeJoypadMotion(joypads[0]) || cubeJoypadMotion(joypads[1]);
 
-				// Check user action.
-				if (action) {
+				// Cancel on pressed.
+				if (action && action.z > 0) {
 
-					// Cancel.
-					if (action.z > 0) {
+					if (playerIndex >= 0) {
 
-						// Pause.
-						waiting = true;
-						playerIndex = -1;
+						// Update time count on turn end.
+						if (players[playerIndex].count > 0) {
+							let c = players[playerIndex].count - players[playerIndex].consumed;
+							players[playerIndex].current = players[playerIndex].count = c > countMax ? countMax * 60 : c > 0 ? c : 0;
+							players[playerIndex].consumed = 0;
+
+						// Reset additional time count on turn end.
+						} else if (players[playerIndex].addition > 0) {
+							players[playerIndex].current = players[playerIndex].consumed = 0;
+						}
+					}
+
+					// Pause.
+					waiting = true;
+					playerIndex = -1;
+
+				// Check user action on tapping.
+				} else if (action && action.z <= 0) {
 
 					// Start.
-					} else if (waiting) {
+					if (waiting) {
 						waiting = false;
 
 						// Start from opposite side on 2 players mode.
@@ -772,15 +786,18 @@ a {
 
 					} else {
 
-						// Update time count on turn end.
-						if (players[playerIndex].count > 0) {
-							let c = players[playerIndex].count - players[playerIndex].consumed + (!pausing ? players[playerIndex].bonus : 0);
-							players[playerIndex].current = players[playerIndex].count = c > countMax ? countMax * 60 : c > 0 ? c : 0;
-							players[playerIndex].consumed = 0;
+					if (playerIndex >= 0) {
 
-						// Reset additional time count on turn end.
-						} else if (players[playerIndex].addition > 0) {
-							players[playerIndex].current = players[playerIndex].consumed = 0;
+							// Update time count on turn end.
+							if (players[playerIndex].count > 0) {
+								let c = players[playerIndex].count - players[playerIndex].consumed + players[playerIndex].bonus;
+								players[playerIndex].current = players[playerIndex].count = c > countMax ? countMax * 60 : c > 0 ? c : 0;
+								players[playerIndex].consumed = 0;
+
+							// Reset additional time count on turn end.
+							} else if (players[playerIndex].addition > 0) {
+								players[playerIndex].current = players[playerIndex].consumed = 0;
+							}
 						}
 
 						// Pause for solo player.

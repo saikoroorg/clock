@@ -6,13 +6,13 @@ var cube = cube || {};
 
 /* VERSION/ *****************************/
 cube.version = "0.8.68";
-cube.timestamp = "30906";
+cube.timestamp = "30908";
 // 20606 : sprite member name changes: screen from sprite. parent from screen.
 // 20607 : use classList.contains instead of contains on sprite.enable method.
 // 20608 : fix bug: classList.contains -> contains on enable method.
 // 30827 : fix bug: screens.push(this.screen) -> screens.push(screens[i]).
 // 30904 : enable screen method splits to draw and enable method and fix resize method.
-// 30906 : set action.z on pressed/swiped.
+// 30908 : set motion.z on pressed/swiped. fix touch bug.
 /************************************* /VERSION*
 
 
@@ -2190,21 +2190,22 @@ cube.Input = class {
 				this._dirs[0] = this.pointVecToDirs(vec);
 
 				// Ignore tap after point out of play radius.
-				this.tapTime = -1;
+				//this.tapTime = -1;
 
 				// Swipe timeout or far depth check.
 				if ((this.flickTime > 0 && this.flickTime <= time - timeout) || this.points[1].z - this.points[0].z >= depth) {
 					this._dirs[0].add(cube.Dirs.far);
-					this.upEvent = true; // Set up event for swiped.
-					// console.log("Swipe:" + (time - this.flickTime));
+					//this.upEvent = true; // Set up event for swiped.
+					this.points[1].z = depth; // Set z for swipng motion.
+					console.log("Swipe:" + (time - this.flickTime));
 
 					// Ignore flick after point reach to far depth.
-					this.flickTime = -1;
+					//this.flickTime = -1;
 
 				// Flick check.
-				} else if (this.upEvent) {
+				} else if (this.upEvent && this.flickTime > time - timeout) {
 					this._dirs[0].add(cube.Dirs.near);
-					// console.log("Flick:" + (time - this.flickTime));
+					console.log("Flick:" + (time - this.flickTime));
 				}
 			} else {
 
@@ -2214,17 +2215,18 @@ cube.Input = class {
 				// Press timeout or far depth check.
 				if ((this.tapTime > 0 && this.tapTime <= time - timeout) || this.points[1].z - this.points[0].z >= depth) {
 					this._dirs[0].add(cube.Dirs.far);
-					this.upEvent = true; // Set up event for pressed.
-					// console.log("Press:" + (time - this.tapTime));
+					//this.upEvent = true; // Set up event for pressed.
+					this.points[1].z = depth; // Set z for pressing motion.
+					console.log("Press:" + (time - this.tapTime));
 
 					// Ignore tap/flick after point reach to far depth.
-					this.tapTime = -1;
-					this.flickTime = -1;
+					//this.tapTime = -1;
+					//this.flickTime = -1;
 
 				// Tap check.
-				} else if (this.upEvent) {
+				} else if (this.upEvent && this.tapTime > time - timeout) {
 					this._dirs[0] = cube.Dirs.near.clone();
-					// console.log("Tap:" + (time - this.tapTime));
+					console.log("Tap:" + (time - this.tapTime));
 				}
 			}
 			// console.log("Mouse/Touch input:" + this.tapTime + " " + time);
@@ -2232,23 +2234,24 @@ cube.Input = class {
 
 		// On down event, only update status.
 		if (this.downEvent) {
-			// console.log("Down Event:" + this._dirs[0].toString() + " " + this.points[1].toString());
+			console.log("Down Event:" + this._dirs[0].toString() + (this.points ? " " + this.points[1].toString() : ""));
 			this._dirs[1] = null;
 			this.downEvent = false;
 
 		// On up event, update status and return dirs.
 		} else if (this.upEvent) {
-			// console.log("Up Event:" + this._dirs[0].toString() + " " + this.points[1].toString());
+			console.log("Up Event:" + this._dirs[0].toString() + (this.points ? " " + this.points[1].toString() : ""));
 
 			this._dirs[1] = this._dirs[0];
 			this.upEvent = false;
 
 		// On after up event.
 		} else if (this._dirs[1] != null) {
-			//console.log("Up Event End.");
+			console.log("Up Event End.");
 			this._dirs[0] = null;
 			this._dirs[1] = null;
 			this.keyCode = null;
+			//this.points = this.touches != null ? this.points : null; // continue touching on pressed/swiped.
 			this.points = null;
 		}
 
@@ -2388,7 +2391,7 @@ cube.Input = class {
 			//touch = this.screen.posToGlobalPos(touch);
 			this.updatePointOnDown(touch);
 
-			// console.log("Touch 1:" + evt.touches.length + " " + touch.toString());
+			console.log("Touch On:" + evt.touches.length + " " + touch.toString());
 
 		// Touch down/up additinal finger or touch move.
 		} else {
@@ -2405,7 +2408,7 @@ cube.Input = class {
 						let touchPrev = new cube.Vec(this.touches[j].pageX, this.touches[j].pageY, this.touches[j].force);
 						moveVec.add(touchNext).sub(touchPrev);
 						moveCount += 1;
-						// console.log("Touch Move ["+i+"]: " + touchPrev.toString() + "->" + touchNext.toString());
+						console.log("Touch Move ["+i+"]: " + touchPrev.toString() + "->" + touchNext.toString());
 					}
 				}
 			}
@@ -2417,7 +2420,7 @@ cube.Input = class {
 					this.updatePointOnMove(touch);
 					this.touches = touchesNext;
 
-					// console.log("Touch 2:" + evt.touches.length + " " + touch.toString() + " " + moveVec.toString() + " " + moveCount);
+					console.log("Touch Move:" + evt.touches.length + " " + touch.toString() + " " + moveVec.toString() + " " + moveCount);
 
 				// Touch up last finger.
 				} else {
@@ -2425,7 +2428,7 @@ cube.Input = class {
 					this.updatePointOnUp(touch);
 					this.touches = null;
 
-					// console.log("Touch 3:" + evt.touches.length + " " + touch.toString());
+					console.log("Touch Off:" + evt.touches.length + " " + touch.toString());
 				}
 			}
 		}

@@ -291,7 +291,7 @@ a {
 	var screens = [], joypads = [];
 	for (let j = screenMax - 1; j >= 0; j--) {
 		screens[j] = cubeScreen("screen", 40, 30);
-		joypads[j] = cubeJoypad(screens[j]);
+		joypads[j] = cubeJoypad(screens[j], true);
 	}
 	//cubeResizeScreen(80, 120);
 

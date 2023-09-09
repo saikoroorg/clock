@@ -157,12 +157,12 @@ if (!self || !self.registration) {
 		}
 
 		// Wake lock.
-		if (navigator.wakeLock) {
+		/*if (navigator.wakeLock) {
 			console.log("Request wake lock.");
 			(async()=>{
 				await navigator.wakeLock.request("screen");
 			})();
-		}
+		}*/
 
 	} catch (error) {
 		console.error(error.name, error.message);

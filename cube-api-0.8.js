@@ -5,14 +5,15 @@
 var cube = cube || {};
 
 /* VERSION/ *****************************/
-cube.version = "0.8.68";
-cube.timestamp = "30908";
+cube.version = "0.8.69";
+cube.timestamp = "30909";
 // 20606 : sprite member name changes: screen from sprite. parent from screen.
 // 20607 : use classList.contains instead of contains on sprite.enable method.
 // 20608 : fix bug: classList.contains -> contains on enable method.
 // 30827 : fix bug: screens.push(this.screen) -> screens.push(screens[i]).
 // 30904 : enable screen method splits to draw and enable method and fix resize method.
 // 30908 : set motion.z on pressed/swiped. fix touch bug.
+// 30909 : add wake lock.
 /************************************* /VERSION*
 
 
@@ -20,6 +21,18 @@ cube.timestamp = "30908";
 
 // Wait some counts.
 async function cubeWait(time) {
+
+	// Wake lock.
+	if (navigator.wakeLock) {
+		try {
+			navigator.wakeLock.request("screen").then((lock) => {
+				setTimeout(() => lock.release(), time);
+			});
+		} catch (error) {
+			console.error(error.name, error.message);
+		}
+	}
+
 	await cube.count.wait(time);
 }
 

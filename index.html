@@ -777,8 +777,8 @@ a {
 			// Cancel/Reset on pressed.
 			if (motion && motion.z >= 0.5) {
 
-				// Reset timeout.
-				if (timeout) {
+				// Reset timeout or starting.
+				if (timeout || waiting == 1) {
 					playing = -2;
 
 				// Pause playing.
@@ -861,6 +861,8 @@ a {
 						} else {
 							playerIndex = 1;
 						}
+					} else if (playerIndex < 0) {
+						playerIndex = 0;
 					}
 				}
 			}

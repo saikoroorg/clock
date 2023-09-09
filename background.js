@@ -10,19 +10,20 @@ Worker = class {
 
 	// Get file from cache or fetch.
 	cacheOrFetch(req, cacheKey) {
+		let url = req.url ? req.url : req;
 		return new Promise((resolve) => {
 
 			// Get cached file.
-			console.log("Get cached file: " + req.url + " from " + cacheKey);
+			console.log("Get cached file: " + url + " from " + cacheKey);
 			self.caches.open(cacheKey).then((cache) => {
-				cache.match(req, {ignoreSearch: true}).then((res) => {
+				cache.match(url, {ignoreSearch: true}).then((res) => {
 					console.log("Found cached file. -> " + res.statusText);
 					resolve(res);
 				}).catch((error) => {
 
 					// Not found cached file.
-					console.log("Not found cached file: " + req.url);
-					this.fetchAndCache(req, cacheKey).then((res) => {
+					console.log("Not found cached file: " + url);
+					this.fetchAndCache(url, cacheKey).then((res) => {
 						resolve(res);
 					});
 				})
@@ -44,17 +45,18 @@ Worker = class {
 
 	// Fetch and cache.
 	fetchAndCache(req, cacheKey) {
-		console.log("Fetch and cache: " + req.url);
+		let url = req.url ? req.url : req;
 
 		// Cache the fetched file.
+		console.log("Fetch and cache: " + url);
 		return fetch(req).then((res) => {
 			if (res.ok) {
 				let contentType = res.headers.get("Content-Type");
 				if (!contentType.match("text/html")) {
 
-					console.log("Cache the fetched file: " + req.url + " to " + cacheKey + " -> " + res.statusText);
+					console.log("Cache the fetched file: " + url + " to " + cacheKey + " -> " + res.statusText);
 					self.caches.open(cacheKey).then((cache) => {
-						cache.put(req.url, res.clone());
+						cache.put(url, res.clone());
 					});
 
 					// Returns fetched response.
@@ -87,9 +89,9 @@ Worker = class {
 							res = new Response(text, options);
 
 							// Cache the replaced file.
-							console.log("Cache the replaced file: " + req.url + " to " + cacheKey + " -> " + res.statusText + " : " + text.replace(/\s+/g, " ").substr(-1000));
+							console.log("Cache the replaced file: " + url + " to " + cacheKey + " -> " + res.statusText + " : " + text.replace(/\s+/g, " ").substr(-1000));
 							self.caches.open(cacheKey).then((cache) => {
-								cache.put(req.url, res.clone());
+								cache.put(url, res.clone());
 							});
 
 							// Resolves by replaced response.
@@ -101,23 +103,23 @@ Worker = class {
 
 			// File not found.
 			} else {
-				console.log("File not found: " + req.url + " -> " + res.statusText);
+				console.log("File not found: " + url + " -> " + res.statusText);
 				return res;
 			}
 		});
 	}
 
-	// Fetch and cache all.
-	fetchAndCacheAll(reqs, cacheKey) {
-		return reqs.then((reqs) => {
-			return Promise.all(reqs.map((req) => {
-				return this.fetchAndCache(req, cacheKey);
-			}));
-		});
+	// Prefetch and cache all.
+	prefetch(reqs, cacheKey) {
+		console.log("Prefetch.");
+		return Promise.all(reqs.map((req) => {
+			return this.fetchAndCache(req, cacheKey);
+		}));
 	}
 
 	// Get manifest file from cache or fetch to start.
 	start() {
+		console.log("Start worker.");
 		return new Promise((resolve) => {
 			this.cacheOrFetch(new Request(this.manifest), "*", null).then((res) => {
 				if (res.ok) {
@@ -134,6 +136,7 @@ Worker = class {
 
 	// Fetch manifest file to renew.
 	renew() {
+		console.log("Renew worker.");
 		return this.fetchAndCache(this.manifest, "*", null);
 	}
 };
@@ -141,15 +144,28 @@ var worker = new Worker();
 
 // Script for client to register worker.
 if (!self || !self.registration) {
+	try {
 
-	// Register worker.
-	if (worker.background) {
-		if (navigator.serviceWorker) {
-			console.log("Register worker: " + worker.background);
-			(async()=>{
-				await navigator.serviceWorker.register(worker.background);
-			})();
+		// Register worker.
+		if (worker.background) {
+			if (navigator.serviceWorker) {
+				console.log("Register worker: " + worker.background);
+				(async()=>{
+					await navigator.serviceWorker.register(worker.background);
+				})();
+			}
 		}
+
+		// Wake lock.
+		window.addEventListener('click', async () => {
+			if (navigator.wakeLock) {
+				console.log("Request wake lock.");
+				await navigator.wakeLock.request("screen");
+			}
+		});
+
+	} catch (error) {
+		console.error(error.name, error.message);
 	}
 
 // Script for worker.
@@ -166,15 +182,15 @@ if (!self || !self.registration) {
 		evt.waitUntil(worker.deleteOldCache());
 
 		// Prefetch and cache all new contents.
-		evt.waitUntil(worker.fetchAndCacheAll(worker.contents, worker.cacheKey));
-
-		// Update manifest file for next install.
-		worker.renew();
+		evt.waitUntil(orker.prefetch(worker.contents, worker.cacheKey));
 	});
 
 	// Event on activating worker.
 	self.addEventListener("activate", (evt) => {
 		console.log("Activate worker: " + worker.background);
+
+		// Update manifest file for next install.
+		evt.waitUntil(worker.renew());
 	});
 
 	// Event on fetching network request.

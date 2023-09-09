@@ -40,11 +40,7 @@ a {
 	background-color: #ccc;
 }
 .screen {
-	width: 100%; height: 100%; left: 0; top: 0;
-	display: flex; display: -webkit-flex;
-	flex-direction: column; -webkit-flex-direction: column;
-	justify-content: center; -webkit-justify-content: center;
-	align-items: center; -webkit-align-items: center;
+	width: 100%; height: 100%;
 	background-color: #ccc;
 }
 #footer {
@@ -84,31 +80,31 @@ a {
 	flex-direction: column; -webkit-flex-direction: column;
 	justify-content: center; -webkit-justify-content: center;
 	align-items: center; -webkit-align-items: center;
+	color: #888;
 	font-size: 16px;
 }
 .menu .subitem {
-	width: 40px; height: 20px; margin-top: -10px; margin-left: -40px;
+	width: 40px; height: 15px; margin-top: -5px; margin-left: -40px;
 	display: flex; display: -webkit-flex;
 	flex-direction: column; -webkit-flex-direction: column;
 	justify-content: center; -webkit-justify-content: center;
 	align-items: center; -webkit-align-items: center;
+	color: #888;
+	background-color: none;
 	font-size: 10px;
+	opacity: 0.5;
+}
+.menu .dark {
+	color: #fff;
 }
 .menu .item.dark {
 	background-color: #000;
-	color: #fff;
 }
-.menu .subitem.dark {
-	background-color: none;
-	color: #fff;
+.menu .light {
+	color: #000;
 }
-.menu .light {;
+.menu .item.light {;
 	background-color: #ccc;
-	color: #000;
-}
-.menu .subitem.light {
-	background-color: none;
-	color: #000;
 }
 .menu a {
 	transform: scale(1);
@@ -122,7 +118,7 @@ a {
 	transform: scale(0.9);
 	opacity: 1;
 }
-@media (min-width: 600px) {
+@media (orientation: landscape) {
 	#contents {
 		flex-direction: row; -webkit-flex-direction: row;
 		justify-content: center; -webkit-justify-content: center;
@@ -141,7 +137,7 @@ a {
 		<div class="menu">
 			<a class="item" id="playerLabel" href="javascript:changePlayer(1);">x2</a>
 			<a class="subitem" href="javascript:changePlayer(-1);">-</a>
-			<a class="item dark" id="countLabel" href="javascript:changeCount();">0</a>
+			<a class="item dark" id="countLabel" href="javascript:changeCount();">10</a>
 			<a class="item light" id="optionLabel" href="javascript:changeOption();">-</a>
 		</div>
 	</h1>
@@ -175,25 +171,35 @@ a {
 		count = c > countMax ? countMax : c > 0 ? c : 0;
 		addition = a > countMax ? countMax : a > 0 ? a : 0;
 		bonus = b > 99 ? 99 : b > 0 ? b : 0;
-		player = p > playerMax ? playerMax : p > 0 ? p : 2;
+		player = p > playerMax ? playerMax : p > 0 ? p : 1;
 
 		// Reset clock information.
 		var e = document.getElementById("countLabel");
 		if (e) {
 			if (count > 0) {
-				e.innerHTML = "" + (count / 60);
+				e.innerHTML = "" + cubeDiv(count, 60);
+				e.classList.add('dark');
+				e.classList.remove('light');
 			} else {
 				e.innerHTML = "0";
+				e.classList.add('light');
+				e.classList.remove('dark');
 			}
 		}
 		e = document.getElementById("optionLabel");
 		if (e) {
-			if (addition > 0) {
-				e.innerHTML = "-" + addition;
-			} else if (bonus > 0) {
+			if (bonus > 0) {
 				e.innerHTML = "+" + bonus;
+				e.classList.add('dark');
+				e.classList.remove('light');
 			} else {
-				e.innerHTML = "-";
+				if (addition > 0) {
+					e.innerHTML = "-" + addition;
+				} else {
+					e.innerHTML = "-";
+				}
+				e.classList.add('light');
+				e.classList.remove('dark');
 			}
 		}
 		e = document.getElementById("playerLabel");
@@ -224,14 +230,14 @@ a {
 	// Change option.
 	function changeOption() {
 		if (!locked) {
-			if (addition <= 0 && bonus < 5) {
-				setClock(count, 0, 5, player); // +5s bonus time (Fischer)
-			} else if (addition <= 0 && bonus < 10) {
-				setClock(count, 0, 10, player); // +10s bonus time (Fischer)
-			} else if (addition < 10) {
+			if (bonus <= 0 && addition < 10) {
 				setClock(count, 10, 0, player); // -10s additional time (Byoyomi)
-			} else if (addition < 30) {
+			} else if (bonus <= 0 && addition < 30) {
 				setClock(count, 30, 0, player); // -30s additional time (Byoyomi)
+			} else if (bonus < 5) {
+				setClock(count, 0, 5, player); // +5s bonus time (Fischer)
+			} else if (bonus < 10) {
+				setClock(count, 0, 10, player); // +10s bonus time (Fischer)
 			} else {
 				setClock(count, 0, 0, player);
 			}
@@ -241,7 +247,11 @@ a {
 	// Change player.
 	function changePlayer(x) {
 		if (!locked) {
-			setClock(count, addition, bonus, player + x);
+			if (x != 0) {
+				setClock(count, addition, bonus, player + x);
+			} else {
+				setClock(count, addition, bonus, 2);
+			}
 		}
 	};
 
@@ -280,7 +290,7 @@ a {
 	const screenMax = 2;
 	var screens = [], joypads = [];
 	for (let j = screenMax - 1; j >= 0; j--) {
-		screens[j] = cubeScreen("screen", 40, 40);
+		screens[j] = cubeScreen("screen", 40, 30);
 		joypads[j] = cubeJoypad(screens[j]);
 	}
 	//cubeResizeScreen(80, 120);
@@ -348,8 +358,8 @@ a {
 
 	// Playing states.
 	//var playing = 0; // Playing count.
-	var waiting = true; // Waiting to start flag.
-	var pausing = false; // Pausing to start flag.
+	var waiting = 1; // Waiting count: 0=playing, 1=w82start, 2=w82restart.
+	var pausing = false; // Pausing on pressing.
 	var timeout = false; // Timeout flag.
 	while (true) {
 
@@ -357,7 +367,7 @@ a {
 		if (playing < 0) {
 
 			// Reset playing states.
-			waiting = true;
+			waiting = 1;
 			pausing = false;
 			timeout = false;
 
@@ -376,16 +386,21 @@ a {
 			for (let j = 0; j < screenMax; j++) {
 				sizes[j] = cubeScreenSize(screens[j]);
 			}
+
+			// 1 Screen for solo player.
 			if (playerCount <= 1) {
-				for (let j = 0; j < 2; j++) {
-					numbers[j].screen = screens[j > 0 ? 0 : 1];
+				cubeEnableScreen(false, screens[1]);
+				for (let j = 0; j < 1; j++) {
+					numbers[j].screen = screens[j];
 					numbers[j].center.x = sizes[j].x / 2;
 					numbers[j].center.y = sizes[j].y / 2;
 					numbers[j].width = sizes[j].x * 0.8;
 					numbers[j].angle = 0;
 				}
 
+			// 2 Screens for 2 players.
 			} else if (playerCount <= 2) {
+				cubeEnableScreen(true, screens[1]);
 				for (let j = 0; j < 2; j++) {
 					numbers[j].screen = screens[j];
 					numbers[j].center.x = sizes[j].x / 2;
@@ -394,7 +409,9 @@ a {
 					numbers[j].angle = 0;
 				}
 
+			// 2 Screens for 3+ players.
 			} else {
+				cubeEnableScreen(true, screens[1]);
 				numbers[0].screen = screens[0];
 				numbers[0].center.x = sizes[0].x / 2;
 				numbers[0].center.y = sizes[0].y / 2;
@@ -442,7 +459,7 @@ a {
 			// Update time count.
 			if (!waiting && !pausing && !timeout) {
 				let k = playerIndex >= 0 ? playerIndex : 0;
-				players[k].consumed += spendTime / 1000; // Chess clock style.
+				players[k].consumed += spendTime / 1000; // Chessclock style.
 				// players[k].consumed += cubeDiv(spendTime, 1000); // Stopwatch style.
 
 				// Main time count.
@@ -532,7 +549,7 @@ a {
 			}
 
 			// Update solo player states.
-			if (playerCount == 1) {
+			/*if (playerCount == 1) {
 				players[1].length = 0;
 
 				// Milliseconds portion of the playing time.
@@ -546,13 +563,13 @@ a {
 				// Time separator for milliseconds.
 				players[1].frames[players[1].length] = 11;
 				players[1].length++;
-			}
+			}*/
 
 			// Update button sprites.
 			let p = playing >= 0 && playing < 6 ? 6 - playing : 0;
 			for (let k = 0; k < buttonMax; k++) {
 
-				// Linked button for solo player.
+				// 1 button for solo player.
 				if (playerCount <= 1) {
 					if (k < 2) {
 						let s = numbers[k].width * 0.025;
@@ -560,11 +577,15 @@ a {
 
 						// Waiting.
 						if (waiting) {
-							if (playerIndex >= 0) {
+							if (waiting >= 2 && !pausing) { // Wait to restart.
+								cubeDilute(0.6, buttons[k].sprite);
+								cubeExpand(s, buttons[k].sprite);
+								cubeMove(numbers[k].center.x, numbers[k].center.y, buttons[k].sprite);
+							} else if (pausing && k == playerIndex) { // Just starting.
 								cubeDilute(1, buttons[k].sprite);
 								cubeExpand(s - 0.02 * p, buttons[k].sprite);
 								cubeMove(numbers[k].center.x, numbers[k].center.y, buttons[k].sprite);
-							} else {
+							} else { // Waiting.
 								cubeDilute(1, buttons[k].sprite);
 								cubeExpand(s, buttons[k].sprite);
 								cubeMove(numbers[k].center.x, numbers[k].center.y, buttons[k].sprite);
@@ -594,15 +615,19 @@ a {
 
 						// Waiting.
 						if (waiting) {
-							if (k == playerIndex) {
+							if (waiting >= 2 && !pausing) { // Wait to restart.
+								cubeDilute(0.6, buttons[k].sprite);
+								cubeExpand(s, buttons[k].sprite);
+								cubeMove(numbers[k].center.x, numbers[k].center.y, buttons[k].sprite);
+							} else if (pausing && k == playerIndex) { // Just starting.
 								cubeDilute(1, buttons[k].sprite);
 								cubeExpand(s - 0.02 * p, buttons[k].sprite);
 								cubeMove(numbers[k].center.x, numbers[k].center.y, buttons[k].sprite);
-							} else if (playerIndex < 0) {
+							} else if (playerIndex < 0) { // Waiting.
 								cubeDilute(1, buttons[k].sprite);
 								cubeExpand(s, buttons[k].sprite);
 								cubeMove(numbers[k].center.x, numbers[k].center.y, buttons[k].sprite);
-							} else {
+							} else { // Opposite player.
 								cubeDilute(0.2, buttons[k].sprite);
 								cubeExpand(s, buttons[k].sprite);
 								cubeMove(numbers[k].center.x, numbers[k].center.y, buttons[k].sprite);
@@ -610,11 +635,11 @@ a {
 
 						// Playing.
 						} else {
-							if (k == playerIndex) {
+							if (k == playerIndex) { // Playing.
 								cubeDilute(1 - 0.04 * p, buttons[k].sprite);
 								cubeExpand(s - 0.02 * p, buttons[k].sprite);
 								cubeMove(numbers[k].center.x, numbers[k].center.y, buttons[k].sprite);
-							} else {
+							} else { // Opposite player.
 								cubeDilute(0.2, buttons[k].sprite);
 								cubeExpand(s, buttons[k].sprite);
 								cubeMove(numbers[k].center.x, numbers[k].center.y, buttons[k].sprite);
@@ -630,19 +655,19 @@ a {
 						let s = numbers[k].width * (k > 0 ? 0.023 : 0.025);
 						cubeAnimate(15, buttons[k].sprite);
 
-						// Waiting.
-						if (waiting) {
-							if (k == 0) {
-								if (playerIndex >= 0) {
+						// Waiting to start.
+						if (waiting == 1) {
+							if (k == 0) { // Playing.
+								if (pausing) { // Just starting.
 									cubeDilute(1, buttons[k].sprite);
 									cubeExpand(s - 0.02 * p, buttons[k].sprite);
 									cubeMove(numbers[k].center.x, numbers[k].center.y, buttons[k].sprite);
-								} else {
+								} else { // Waiting.
 									cubeDilute(1, buttons[k].sprite);
 									cubeExpand(s, buttons[k].sprite);
 									cubeMove(numbers[k].center.x, numbers[k].center.y, buttons[k].sprite);
 								}
-							} else {
+							} else { // Another players.
 								cubeDilute(0.2, buttons[k].sprite);
 								cubeExpand(s, buttons[k].sprite);
 								cubeMove(numbers[k].center.x, numbers[k].center.y, buttons[k].sprite);
@@ -650,15 +675,23 @@ a {
 
 						// Playing.
 						} else {
-							if (k == 0) {
-								cubeDilute(1 - 0.04 * p, buttons[k].sprite);
-								cubeExpand(s - 0.02 * p, buttons[k].sprite);
-								cubeMove(numbers[k].center.x, numbers[k].center.y, buttons[k].sprite);
-							} else if (k == playerIndex + 1) {
-								cubeDilute(1 - 0.04 * p, buttons[k].sprite);
-								cubeExpand(s - 0.005 * p, buttons[k].sprite);
-								cubeMove(numbers[k].center.x, numbers[k].center.y, buttons[k].sprite);
-							} else {
+							if (k == 0 || k == playerIndex + 1) { // Playing or target player.
+								if (waiting >= 2 && !pausing) { // Wait to restart.
+										cubeDilute(0.6, buttons[k].sprite);
+										cubeExpand(s, buttons[k].sprite);
+										cubeMove(numbers[k].center.x, numbers[k].center.y, buttons[k].sprite);
+								} else {
+									if (k == 0) { // Playing
+										cubeDilute(1 - 0.04 * p, buttons[k].sprite);
+										cubeExpand(s - 0.02 * p, buttons[k].sprite);
+										cubeMove(numbers[k].center.x, numbers[k].center.y, buttons[k].sprite);
+									} else if (k == playerIndex + 1) { // Target player.
+										cubeDilute(1 - 0.04 * p, buttons[k].sprite);
+										cubeExpand(s - 0.005 * p, buttons[k].sprite);
+										cubeMove(numbers[k].center.x, numbers[k].center.y, buttons[k].sprite);
+									}
+								}
+							} else { // Another players.
 								cubeDilute(0.2, buttons[k].sprite);
 								cubeExpand(s, buttons[k].sprite);
 								cubeMove(numbers[k].center.x, numbers[k].center.y, buttons[k].sprite);
@@ -732,76 +765,104 @@ a {
 			// Wait for input.
 			await cubeWait(10);
 
-			if (!timeout) {
+			// Read input.
+			for (let j = 0; j < screenMax; j++) {
+				await cubeReadJoypad(0, joypads[j]);
+			}
+			let action = (playerCount == 2 && !waiting) ? cubeJoypadAction(joypads[playerIndex]) :
+				cubeJoypadAction(joypads[0]) || cubeJoypadAction(joypads[1]);
+			let motion = (playerCount == 2 && !waiting) ? cubeJoypadMotion(joypads[playerIndex]) :
+				cubeJoypadMotion(joypads[0]) || cubeJoypadMotion(joypads[1]);
 
-				// Read input.
-				for (let j = 0; j < screenMax; j++) {
-					await cubeReadJoypad(0, joypads[j]);
-				}
-				let action = (playerCount == 2 && !waiting) ? cubeJoypadAction(joypads[playerIndex]) :
-					cubeJoypadAction(joypads[0]) || cubeJoypadAction(joypads[1]);
-				let motion = (playerCount == 2 && !waiting) ? cubeJoypadMotion(joypads[playerIndex]) :
-					cubeJoypadMotion(joypads[0]) || cubeJoypadMotion(joypads[1]);
+			// Cancel/Reset on pressed.
+			if (motion && motion.z >= 0.5) {
 
-				// Check trigger button.
-				if (action) {
+				// Reset timeout or starting.
+				if (timeout || waiting == 1) {
+					playing = -2;
 
-					// Start.
-					if (waiting) {
-						waiting = false;
+				// Pause playing.
+				} else {
+					if (playerIndex >= 0) {
 
-						// Start from opposite side on 2 players mode.
-						if (playerCount == 2) {
-							if (cubeJoypadAction(joypads[0])) {
-								playerIndex = 1;
-							} else {
-								playerIndex = 0;
-							}
-						} else {
-							playerIndex = 0;
-						}
-
-					} else {
-
-						// Update time count on turn end.
+						// Update time count.
 						if (players[playerIndex].count > 0) {
-							let c = players[playerIndex].count - players[playerIndex].consumed + (!pausing ? players[playerIndex].bonus : 0);
-							players[playerIndex].current = players[playerIndex].count = c > countMax ? countMax * 60 : c > 0 ? c : 0;
+							let c = players[playerIndex].count - players[playerIndex].consumed;
+							players[playerIndex].current = players[playerIndex].count = c > 0 ? c : 0;
 							players[playerIndex].consumed = 0;
-
-						// Reset additional time count on turn end.
-						} else if (players[playerIndex].addition > 0) {
-							players[playerIndex].current = players[playerIndex].consumed = 0;
-						}
-
-						// Pause on solo mode.
-						if (playerCount <= 1) {
-							pausing = !pausing;
-
-						// Switch players.
-						} else {
-							playerIndex = cubeMod(playerIndex + 1, playerCount);
 						}
 					}
 
-					// Restart.
-					playing = -1;
+					// Pause.
+					pausing = false;
+					waiting = 2;
+				}
 
-				// Check holding button.
-				} else if (motion) {
-					playing = 1;
+			// Check user action on tapping.
+			} else if (action && action.z <= 0 && !timeout) {
 
-					// Waiting to start from opposite side on 2 players mode.
-					if (waiting) {
-						if (playerCount == 2) {
-							if (cubeJoypadMotion(joypads[0])) {
-								playerIndex = 0;
-							} else {
-								playerIndex = 1;
-							}
+				if (playerIndex >= 0) {
+
+					// Update time count on turn end.
+					if (players[playerIndex].count > 0) {
+						let c = players[playerIndex].count - players[playerIndex].consumed + players[playerIndex].bonus;
+						players[playerIndex].current = players[playerIndex].count = c > countMax ? countMax * 60 : c > 0 ? c : 0;
+						players[playerIndex].consumed = 0;
+
+					// Reset additional time count on turn end.
+					} else if (players[playerIndex].addition > 0) {
+						players[playerIndex].current = players[playerIndex].consumed = 0;
+					}
+				}
+
+				// Start.
+				if (waiting) {
+					waiting = 0;
+
+					// Start from opposite side on 2 players mode.
+					if (playerCount == 2) {
+						if (cubeJoypadAction(joypads[0])) {
+							playerIndex = 1;
 						} else {
 							playerIndex = 0;
 						}
+					} else if (playerIndex < 0) {
+						playerIndex = 0;
+					}
+
+				} else {
+
+					// Pause for solo player.
+					if (playerCount <= 1) {
+						waiting = 2;
+
+					// Switch players.
+					} else {
+						playerIndex = cubeMod(playerIndex + 1, playerCount);
+					}
+				}
+
+				// Restart.
+				pausing = false;
+				playing = -1;
+
+			// Check user motion.
+			} else if (motion) {
+
+				// Start pausing.
+				pausing = true;
+				playing = 1;
+
+				// Waiting to start from opposite side on 2 players mode.
+				if (waiting && !timeout) {
+					if (playerCount == 2) {
+						if (cubeJoypadMotion(joypads[0])) {
+							playerIndex = 0;
+						} else {
+							playerIndex = 1;
+						}
+					} else if (playerIndex < 0) {
+						playerIndex = 0;
 					}
 				}
 			}

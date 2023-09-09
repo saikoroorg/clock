@@ -5,12 +5,14 @@
 var cube = cube || {};
 
 /* VERSION/ *****************************/
-cube.version = "0.8.66";
-cube.timestamp = "30827";
+cube.version = "0.8.68";
+cube.timestamp = "30908";
 // 20606 : sprite member name changes: screen from sprite. parent from screen.
 // 20607 : use classList.contains instead of contains on sprite.enable method.
 // 20608 : fix bug: classList.contains -> contains on enable method.
 // 30827 : fix bug: screens.push(this.screen) -> screens.push(screens[i]).
+// 30904 : enable screen method splits to draw and enable method and fix resize method.
+// 30908 : set motion.z on pressed/swiped. fix touch bug.
 /************************************* /VERSION*
 
 
@@ -101,7 +103,7 @@ function cubeScreen(name=null, width=0, height=0, unitSize=0) {
 		if (width > 0 && height > 0) {
 			screen.resize(width, height, unitSize);
 		}
-		screen.enable();
+		screen.draw();
 		return screen;
 	}
 	return cube.screen;
@@ -169,7 +171,15 @@ function cubeResizeScreen(width, height, fontSize=0, screen=null) {
 		screen = cube.screen;
 	}
 	screen.resize(width, height, fontSize);
-	screen.enable();
+	screen.draw();
+}
+
+// Enable or disable screen.
+function cubeEnableScreen(flag, screen=null) {
+	if (!screen) {
+		screen = cube.screen;
+	}
+	screen.enable(flag);
 }
 
 // Get screen resolution size.
@@ -1273,7 +1283,11 @@ cube.Screen = class {
 		this.screen.style.justifyContent = "start";
 		this.screen.style.clipPath = "border-box";
 		this.screen.style.imageRendering = "pixelated";
-		window.addEventListener("resize", (evt) => this.onResize(evt));
+
+		// @todo: use observer instead of resize window event.
+		// https://webfrontend.ninja/js-resize-observer/
+		//window.addEventListener("resize", (evt) => this.onResize(evt));
+		new ResizeObserver((entries) => this.onResize()).observe(this.root);
 	}
 
 	// Clone.
@@ -1326,35 +1340,14 @@ cube.Screen = class {
 		this.screen.style.width = this.size.x;
 		this.screen.style.height = this.size.y;
 
-		// Fit screen to parent pane.
-		if (this.root.clientWidth > 0 && this.root.clientHeight > 0) {
-			let sx = this.root.clientWidth / this.size.x;
-			let sy = this.root.clientHeight / this.size.y;
-			this.scale = Math.min(sx, sy);
-			let t1 = (this.scale * 100) + "%";
-			let t2 = "scale(" + this.scale + ")";
-			this.screen.style.transform = t2;
-		}
-
-		// Set font size by unit size.
-		if (this.size.z > 0) {
-		   this.screen.style.fontFamily = "Courier,monospace,sans-serif";
-		   this.screen.style.fontSize = this.size.z;
-		}
-
-		// Reset abolute pos.
-		let rect = this.screen.getBoundingClientRect();
-		this.pos.x = window.pageXOffset + rect.left;
-		this.pos.y = window.pageYOffset + rect.top;
-
 		this.resized = true;
-		console.log("resize: scale=" + this.scale + " pos=" + this.pos);
+		this.onResize();
 	}
 
 	// Resize event handler.
-	onResize(evt) {
-		evt = evt != null ? evt : window.event;
-		evt.preventDefault();
+	onResize() {
+		//evt = evt != null ? evt : window.event;
+		//evt.preventDefault();
 		if (this.resized) {
 
 			// Fit screen to parent pane.
@@ -1363,7 +1356,9 @@ cube.Screen = class {
 				let sy = this.root.clientHeight / this.size.y;
 				this.scale = Math.min(sx, sy);
 				let t1 = (this.scale * 100) + "%";
-				let t2 = "scale(" + this.scale + ")";
+				let t2 = "translate(-50%,-50%) scale(" + this.scale + ")";
+				this.screen.style.left = "50%";
+				this.screen.style.top = "50%";
 				this.screen.style.transform = t2;
 			}
 
@@ -1372,49 +1367,55 @@ cube.Screen = class {
 			this.pos.x = window.pageXOffset + rect.left;
 			this.pos.y = window.pageYOffset + rect.top;
 		}
-		console.log("event:" + evt.type + " scale=" + this.scale + " pos=" + this.pos);
+		// console.log("event: scale=" + this.scale + " pos=" + this.pos);
+	}
+
+	// Draw this screen to parent screen.
+	draw(parent=null) {
+		if (this.root != null) {
+			parent = parent != null ? parent.screen : document.body;
+			if (!parent.contains(this.root)) {
+				parent.appendChild(this.root);
+				/*
+				this.root.style.position = "absolute";
+				this.root.style.left = this.pos.x = x;
+				this.root.style.top = this.pos.y = y;
+				if (this.resized) {
+					this.resize(this.size.x, this.size.y);
+				} else {
+					this.screen.style.width = this.size.x = this.root.clientWidth;
+					this.screen.style.height = this.size.y = this.root.clientHeight;
+				}
+				*/
+
+				// Fit screen to parent pane.
+				if (this.root.clientWidth > 0 && this.root.clientHeight > 0) {
+					let sx = this.root.clientWidth / this.size.x;
+					let sy = this.root.clientHeight / this.size.y;
+					this.scale = Math.min(sx, sy);
+					let t1 = (this.scale * 100) + "%";
+					let t2 = "scale(" + this.scale + ")";
+					this.screen.style.transform = t2;
+				}
+
+				// Set abolute pos.
+				let rect = this.screen.getBoundingClientRect();
+				this.pos.x = window.pageXOffset + rect.left;
+				this.pos.y = window.pageYOffset + rect.top;
+
+				console.log("draw: scale=" + this.scale + " pos=" + this.pos);
+			}
+		}
 	}
 
 	// Enable to show or disable to hide.
-	enable(parent=null, enable=true) {
+	enable(flag=true) {
 		if (this.root != null) {
-			parent = parent != null ? parent.screen : document.body;
-			if (enable) {
-				if (!parent.contains(this.root)) {
-					parent.appendChild(this.root);
-					/*
-					this.root.style.position = "absolute";
-					this.root.style.left = this.pos.x = x;
-					this.root.style.top = this.pos.y = y;
-					if (this.resized) {
-						this.resize(this.size.x, this.size.y);
-					} else {
-						this.screen.style.width = this.size.x = this.root.clientWidth;
-						this.screen.style.height = this.size.y = this.root.clientHeight;
-					}
-					*/
-
-					// Fit screen to parent pane.
-					if (this.root.clientWidth > 0 && this.root.clientHeight > 0) {
-						let sx = this.root.clientWidth / this.size.x;
-						let sy = this.root.clientHeight / this.size.y;
-						this.scale = Math.min(sx, sy);
-						let t1 = (this.scale * 100) + "%";
-						let t2 = "scale(" + this.scale + ")";
-						this.screen.style.transform = t2;
-					}
-
-					// Set abolute pos.
-					let rect = this.screen.getBoundingClientRect();
-					this.pos.x = window.pageXOffset + rect.left;
-					this.pos.y = window.pageYOffset + rect.top;
-
-					console.log("enable: scale=" + this.scale + " pos=" + this.pos);
-				}
+			if (flag) {
+				this.root.style.display = "block";
+				this.resize(this.size.x, this.size.y, this.size.z); // @todo: resize all screens.
 			} else {
-				if (parent.contains(this.root)) {
-					parent.removeChild(this.root);
-				}
+				this.root.style.display = "none";
 			}
 		}
 	}
@@ -2189,20 +2190,22 @@ cube.Input = class {
 				this._dirs[0] = this.pointVecToDirs(vec);
 
 				// Ignore tap after point out of play radius.
-				this.tapTime = time - timeout;
+				//this.tapTime = -1;
 
 				// Swipe timeout or far depth check.
-				if (this.flickTime <= time - timeout || this.points[1].z - this.points[0].z >= depth) {
+				if ((this.flickTime > 0 && this.flickTime <= time - timeout) || this.points[1].z - this.points[0].z >= depth) {
 					this._dirs[0].add(cube.Dirs.far);
-					//console.log("Swipe:" + this.flickTime + " " + time);
+					//this.upEvent = true; // Set up event for swiped.
+					this.points[1].z = depth; // Set z for swipng motion.
+					console.log("Swipe:" + (time - this.flickTime));
 
 					// Ignore flick after point reach to far depth.
-					this.flickTime = time - timeout;
+					//this.flickTime = -1;
 
 				// Flick check.
-				} else if (this.upEvent) {
+				} else if (this.upEvent && this.flickTime > time - timeout) {
 					this._dirs[0].add(cube.Dirs.near);
-					//console.log("Flick:" + this.flickTime + " " + time);
+					console.log("Flick:" + (time - this.flickTime));
 				}
 			} else {
 
@@ -2210,42 +2213,45 @@ cube.Input = class {
 				this._dirs[0] = new cube.Dirs();
 
 				// Press timeout or far depth check.
-				if (this.tapTime <= time - timeout || this.points[1].z - this.points[0].z >= depth) {
+				if ((this.tapTime > 0 && this.tapTime <= time - timeout) || this.points[1].z - this.points[0].z >= depth) {
 					this._dirs[0].add(cube.Dirs.far);
-					//console.log("Press:" + this.tapTime + " " + time);
+					//this.upEvent = true; // Set up event for pressed.
+					this.points[1].z = depth; // Set z for pressing motion.
+					console.log("Press:" + (time - this.tapTime));
 
 					// Ignore tap/flick after point reach to far depth.
-					this.tapTime = time - timeout;
-					this.flickTime = time - timeout;
+					//this.tapTime = -1;
+					//this.flickTime = -1;
 
 				// Tap check.
-				} else if (this.upEvent) {
+				} else if (this.upEvent && this.tapTime > time - timeout) {
 					this._dirs[0] = cube.Dirs.near.clone();
-					//console.log("Tap:" + this.tapTime + " " + time);
+					console.log("Tap:" + (time - this.tapTime));
 				}
 			}
-			//console.log("Mouse/Touch input:" + this.tapTime + " " + time);
+			// console.log("Mouse/Touch input:" + this.tapTime + " " + time);
 		}
 
 		// On down event, only update status.
 		if (this.downEvent) {
-			//console.log("Down Event:" + this._dirs[0].toString() + " " + this.points[1].toString());
+			console.log("Down Event:" + this._dirs[0].toString() + (this.points ? " " + this.points[1].toString() : ""));
 			this._dirs[1] = null;
 			this.downEvent = false;
 
 		// On up event, update status and return dirs.
 		} else if (this.upEvent) {
-			//console.log("Up Event:" + this._dirs[0].toString() + " " + this.points[1].toString());
+			console.log("Up Event:" + this._dirs[0].toString() + (this.points ? " " + this.points[1].toString() : ""));
 
 			this._dirs[1] = this._dirs[0];
 			this.upEvent = false;
 
 		// On after up event.
 		} else if (this._dirs[1] != null) {
-			//console.log("Up Event End.");
+			console.log("Up Event End.");
 			this._dirs[0] = null;
 			this._dirs[1] = null;
 			this.keyCode = null;
+			//this.points = this.touches != null ? this.points : null; // continue touching on pressed/swiped.
 			this.points = null;
 		}
 
@@ -2385,7 +2391,7 @@ cube.Input = class {
 			//touch = this.screen.posToGlobalPos(touch);
 			this.updatePointOnDown(touch);
 
-			// console.log("Touch 1:" + evt.touches.length + " " + touch.toString());
+			console.log("Touch On:" + evt.touches.length + " " + touch.toString());
 
 		// Touch down/up additinal finger or touch move.
 		} else {
@@ -2402,7 +2408,7 @@ cube.Input = class {
 						let touchPrev = new cube.Vec(this.touches[j].pageX, this.touches[j].pageY, this.touches[j].force);
 						moveVec.add(touchNext).sub(touchPrev);
 						moveCount += 1;
-						// console.log("Touch Move ["+i+"]: " + touchPrev.toString() + "->" + touchNext.toString());
+						console.log("Touch Move ["+i+"]: " + touchPrev.toString() + "->" + touchNext.toString());
 					}
 				}
 			}
@@ -2414,7 +2420,7 @@ cube.Input = class {
 					this.updatePointOnMove(touch);
 					this.touches = touchesNext;
 
-					// console.log("Touch 2:" + evt.touches.length + " " + touch.toString() + " " + moveVec.toString() + " " + moveCount);
+					console.log("Touch Move:" + evt.touches.length + " " + touch.toString() + " " + moveVec.toString() + " " + moveCount);
 
 				// Touch up last finger.
 				} else {
@@ -2422,7 +2428,7 @@ cube.Input = class {
 					this.updatePointOnUp(touch);
 					this.touches = null;
 
-					// console.log("Touch 3:" + evt.touches.length + " " + touch.toString());
+					console.log("Touch Off:" + evt.touches.length + " " + touch.toString());
 				}
 			}
 		}
@@ -2432,7 +2438,7 @@ cube.Input = class {
 	onScroll(evt) {
 		evt = evt != null ? evt : window.event;
 		evt.preventDefault();
-		console.log("event:" + evt.type)
+		// console.log("event:" + evt.type)
 	}
 }
 

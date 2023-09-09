@@ -5,15 +5,14 @@
 var cube = cube || {};
 
 /* VERSION/ *****************************/
-cube.version = "0.8.69";
-cube.timestamp = "30909";
+cube.version = "0.8.68";
+cube.timestamp = "30908";
 // 20606 : sprite member name changes: screen from sprite. parent from screen.
 // 20607 : use classList.contains instead of contains on sprite.enable method.
 // 20608 : fix bug: classList.contains -> contains on enable method.
 // 30827 : fix bug: screens.push(this.screen) -> screens.push(screens[i]).
 // 30904 : enable screen method splits to draw and enable method and fix resize method.
 // 30908 : set motion.z on pressed/swiped. fix touch bug.
-// 30909 : add wake lock.
 /************************************* /VERSION*
 
 
@@ -370,9 +369,9 @@ async function cubeCanvasSprite(canvas=null) {
 //  .motion : true on Touching by mouse/touch or Key-pressing by keyboard
 
 // Get master joypad or create new joypad.
-function cubeJoypad(screen=null, lock=false) {
+function cubeJoypad(screen=null) {
 	if (screen) {
-		var joypad = new cube.Input(screen, lock);
+		var joypad = new cube.Input(screen);
 		return joypad;
 	}
 	return cube.joypad;
@@ -1285,7 +1284,8 @@ cube.Screen = class {
 		this.screen.style.clipPath = "border-box";
 		this.screen.style.imageRendering = "pixelated";
 
-		// Use observer instead of resize window event to catch all events.
+		// @todo: use observer instead of resize window event.
+		// https://webfrontend.ninja/js-resize-observer/
 		//window.addEventListener("resize", (evt) => this.onResize(evt));
 		new ResizeObserver((entries) => this.onResize()).observe(this.root);
 	}
@@ -1924,7 +1924,7 @@ cube.canvas = new cube.Sprite("cubeCanvas");
 cube.Input = class {
 
 	// Constructor.
-	constructor(screen=null, lock=false) {
+	constructor(screen=null) {
 		this.dir = null;
 		this.pos = null;
 
@@ -1954,14 +1954,6 @@ cube.Input = class {
 			parent.addEventListener("touchend", (evt) => this.onTouch(evt));
 			parent.addEventListener("touchcancel", (evt) => this.onTouch(evt));
 			document.addEventListener("scroll", (evt) => this.onScroll(evt));
-
-			// Wake lock.
-			if (lock && navigator.wakeLock) {
-				console.log("Request wake lock.");
-				parent.addEventListener('click', async () => {
-					await navigator.wakeLock.request("screen");
-				});
-			}
 		}
 	}
 

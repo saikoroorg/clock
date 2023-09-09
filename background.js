@@ -156,6 +156,14 @@ if (!self || !self.registration) {
 			}
 		}
 
+		// Wake lock.
+		window.addEventListener('click', async () => {
+			if (navigator.wakeLock) {
+				console.log("Request wake lock.");
+				await navigator.wakeLock.request("screen");
+			}
+		});
+
 	} catch (error) {
 		console.error(error.name, error.message);
 	}

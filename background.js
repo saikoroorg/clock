@@ -144,15 +144,28 @@ var worker = new Worker();
 
 // Script for client to register worker.
 if (!self || !self.registration) {
+	try {
 
-	// Register worker.
-	if (worker.background) {
-		if (navigator.serviceWorker) {
-			console.log("Register worker: " + worker.background);
+		// Register worker.
+		if (worker.background) {
+			if (navigator.serviceWorker) {
+				console.log("Register worker: " + worker.background);
+				(async()=>{
+					await navigator.serviceWorker.register(worker.background);
+				})();
+			}
+		}
+
+		// Wake lock.
+		if (navigator.wakeLock) {
+			console.log("Request wake lock.");
 			(async()=>{
-				await navigator.serviceWorker.register(worker.background);
+				await navigator.wakeLock.request("screen");
 			})();
 		}
+
+	} catch (error) {
+		console.error(error.name, error.message);
 	}
 
 // Script for worker.

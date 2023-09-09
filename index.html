@@ -769,96 +769,97 @@ a {
 			for (let j = 0; j < screenMax; j++) {
 				await cubeReadJoypad(0, joypads[j]);
 			}
-			if (!timeout) {
-				let action = (playerCount == 2 && !waiting) ? cubeJoypadAction(joypads[playerIndex]) :
-					cubeJoypadAction(joypads[0]) || cubeJoypadAction(joypads[1]);
-				let motion = (playerCount == 2 && !waiting) ? cubeJoypadMotion(joypads[playerIndex]) :
-					cubeJoypadMotion(joypads[0]) || cubeJoypadMotion(joypads[1]);
+			let action = (playerCount == 2 && !waiting) ? cubeJoypadAction(joypads[playerIndex]) :
+				cubeJoypadAction(joypads[0]) || cubeJoypadAction(joypads[1]);
+			let motion = (playerCount == 2 && !waiting) ? cubeJoypadMotion(joypads[playerIndex]) :
+				cubeJoypadMotion(joypads[0]) || cubeJoypadMotion(joypads[1]);
 
-				// Cancel on pressed.
-				if (motion && motion.z >= 0.5) {
+			// Cancel/Reset on pressed.
+			if (motion && motion.z >= 0.5) {
 
+				// Reset timeout.
+				if (timeout) {
+					playing = -2;
+
+				// Pause playing.
+				} else if (!waiting) {
 					if (playerIndex >= 0) {
 
-						// Update time count on turn end.
+						// Update time count.
 						if (players[playerIndex].count > 0) {
 							let c = players[playerIndex].count - players[playerIndex].consumed;
-							players[playerIndex].current = players[playerIndex].count = c > countMax ? countMax * 60 : c > 0 ? c : 0;
+							players[playerIndex].current = players[playerIndex].count = c > 0 ? c : 0;
 							players[playerIndex].consumed = 0;
-
-						// Reset additional time count on turn end.
-						} else if (players[playerIndex].addition > 0) {
-							players[playerIndex].current = players[playerIndex].consumed = 0;
 						}
 					}
 
 					// Pause.
 					pausing = false;
 					waiting = 2;
+				}
 
-				// Check user action on tapping.
-				} else if (action && action.z <= 0) {
+			// Check user action on tapping.
+			} else if (action && action.z <= 0 && !timeout) {
 
-					// Start.
-					if (waiting) {
-						waiting = 0;
+				if (playerIndex >= 0) {
 
-						// Start from opposite side on 2 players mode.
-						if (playerCount == 2) {
-							if (cubeJoypadAction(joypads[0])) {
-								playerIndex = 1;
-							} else {
-								playerIndex = 0;
-							}
-						} else if (playerIndex < 0) {
+					// Update time count on turn end.
+					if (players[playerIndex].count > 0) {
+						let c = players[playerIndex].count - players[playerIndex].consumed + players[playerIndex].bonus;
+						players[playerIndex].current = players[playerIndex].count = c > countMax ? countMax * 60 : c > 0 ? c : 0;
+						players[playerIndex].consumed = 0;
+
+					// Reset additional time count on turn end.
+					} else if (players[playerIndex].addition > 0) {
+						players[playerIndex].current = players[playerIndex].consumed = 0;
+					}
+				}
+
+				// Start.
+				if (waiting) {
+					waiting = 0;
+
+					// Start from opposite side on 2 players mode.
+					if (playerCount == 2) {
+						if (cubeJoypadAction(joypads[0])) {
+							playerIndex = 1;
+						} else {
 							playerIndex = 0;
 						}
-
-					} else {
-
-						if (playerIndex >= 0) {
-
-							// Update time count on turn end.
-							if (players[playerIndex].count > 0) {
-								let c = players[playerIndex].count - players[playerIndex].consumed + players[playerIndex].bonus;
-								players[playerIndex].current = players[playerIndex].count = c > countMax ? countMax * 60 : c > 0 ? c : 0;
-								players[playerIndex].consumed = 0;
-
-							// Reset additional time count on turn end.
-							} else if (players[playerIndex].addition > 0) {
-								players[playerIndex].current = players[playerIndex].consumed = 0;
-							}
-						}
-
-						// Pause for solo player.
-						if (playerCount <= 1) {
-							waiting = 2;
-
-						// Switch players.
-						} else {
-							playerIndex = cubeMod(playerIndex + 1, playerCount);
-						}
+					} else if (playerIndex < 0) {
+						playerIndex = 0;
 					}
 
-					// Restart.
-					pausing = false;
-					playing = -1;
+				} else {
 
-				// Check user motion.
-				} else if (motion) {
+					// Pause for solo player.
+					if (playerCount <= 1) {
+						waiting = 2;
 
-					// Start pausing.
-					pausing = true;
-					playing = 1;
+					// Switch players.
+					} else {
+						playerIndex = cubeMod(playerIndex + 1, playerCount);
+					}
+				}
 
-					// Waiting to start from opposite side on 2 players mode.
-					if (waiting) {
-						if (playerCount == 2) {
-							if (cubeJoypadMotion(joypads[0])) {
-								playerIndex = 0;
-							} else {
-								playerIndex = 1;
-							}
+				// Restart.
+				pausing = false;
+				playing = -1;
+
+			// Check user motion.
+			} else if (motion) {
+
+				// Start pausing.
+				pausing = true;
+				playing = 1;
+
+				// Waiting to start from opposite side on 2 players mode.
+				if (waiting && !timeout) {
+					if (playerCount == 2) {
+						if (cubeJoypadMotion(joypads[0])) {
+							playerIndex = 0;
+						} else {
+							playerIndex = 1;
 						}
 					}
 				}

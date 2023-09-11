@@ -296,6 +296,7 @@ a {
 	//const playerMax = 2; // Maximum player count.
 	var playerCount = 2; // Player count.
 	var playerIndex = 0; // Current player index.
+	var playerCountMin2 = 2; // Player count for hourglass mode.
 
 	// Player state.
 	PlayerState = class {
@@ -371,7 +372,8 @@ a {
 			// Reset player states.
 			playerCount = player;
 			playerIndex = -1;
-			for (let j = 0; j < playerCount; j++) {
+			playerCountMin2 = playerCount > 2 ? playerCount : 2; // Minimum 2 players for hourglass mode.
+			for (let j = 0; j < playerCountMin2; j++) {
 				players[j].count = players[j].current = count;
 				players[j].addition = addition;
 				players[j].bonus = bonus;
@@ -457,12 +459,14 @@ a {
 			if (!waiting && !pausing && !timeout) {
 				players[playerIndex].consumed += spendTime / 1000; // Chessclock style.
 				// players[playerIndex].consumed += cubeDiv(spendTime, 1000); // Stopwatch style.
+				if (players[playerIndex].consumed > players[playerIndex].count) {
+					players[playerIndex].consumed = players[playerIndex].count;
+				}
 
 				// Main time count.
 				if (players[playerIndex].count > 0) {
 					players[playerIndex].current = players[playerIndex].count - players[playerIndex].consumed;
 					if (players[playerIndex].current <= 0) {
-						players[playerIndex].current = players[playerIndex].count = players[playerIndex].consumed = 0;
 
 						// Start additional time.
 						if (players[playerIndex].addition > 0) {
@@ -478,7 +482,7 @@ a {
 
 					// Update all players count for hourglass mode.
 					if (players[playerIndex].bonus < 0) {
-						for (let j = 0; j < playerMax; j++) {
+						for (let j = 0; j < playerCountMin2; j++) {
 							if (j != playerIndex) {
 								players[j].current = players[j].count + players[playerIndex].consumed;
 							}

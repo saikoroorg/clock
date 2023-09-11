@@ -1,7 +1,7 @@
 {
 	"name": "clock",
 	"short_name": "Clock",
-	"version": "0.8.30911a",
+	"version": "0.8.30911b",
 	"author": "saikoro.org",
 	"background_color": "#ccc",
 	"theme_color": "#ccc",
@@ -15,5 +15,6 @@
 		"type": "image/png"
 	}],
 	"display": "standalone",
-	"start_url": "./?app=1"
+	"start_url": "./?app=1",
+	"contents": ["./", "./background.js", "./cube-api-0.8.js", "./image.svg"]
 }

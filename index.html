@@ -170,7 +170,7 @@ a {
 	function setClock(c, a=0, b=0, p=0) {
 		count = c > countMax ? countMax : c > 0 ? c : 0;
 		addition = a > countMax ? countMax : a > 0 ? a : 0;
-		bonus = b > 99 ? 99 : b > 0 ? b : 0;
+		bonus = b > 99 ? 99 : b; // Hourglass mode if b < 0.
 		player = p > playerMax ? playerMax : p > 0 ? p : 1;
 
 		// Reset clock information.
@@ -188,16 +188,12 @@ a {
 		}
 		e = document.getElementById("optionLabel");
 		if (e) {
-			if (bonus > 0) {
-				e.innerHTML = "+" + bonus;
+			if (bonus != 0) {
+				e.innerHTML = "+" + (bonus > 0 ? bonus : "");
 				e.classList.add('dark');
 				e.classList.remove('light');
 			} else {
-				if (addition > 0) {
-					e.innerHTML = "-" + addition;
-				} else {
-					e.innerHTML = "-";
-				}
+				e.innerHTML = "-" + (addition > 0 ? addition : "");
 				e.classList.add('light');
 				e.classList.remove('dark');
 			}
@@ -230,10 +226,12 @@ a {
 	// Change option.
 	function changeOption() {
 		if (!locked) {
-			if (bonus <= 0 && addition < 10) {
+			if (bonus == 0 && addition < 10) {
 				setClock(count, 10, 0, player); // -10s additional time (Byoyomi)
-			} else if (bonus <= 0 && addition < 30) {
+			} else if (bonus == 0 && addition < 30) {
 				setClock(count, 30, 0, player); // -30s additional time (Byoyomi)
+			} else if (bonus == 0) {
+				setClock(count, 0, -1, player); // +?s opposite time (Hourglass)
 			} else if (bonus < 5) {
 				setClock(count, 0, 5, player); // +5s bonus time (Fischer)
 			} else if (bonus < 10) {
@@ -263,9 +261,9 @@ a {
 		setClock(params[0] * 60, params[1], 0, params[2]);
 		locked = true;
 
-	// Bonus time mode. (Fischer)
+	// Bonus time mode. (Fischer) / Hourglass mode.
 	} else if (cubeParamContains(0, "b")) {
-		setClock(params[0] * 60, 0, params[1], params[2]);
+		setClock(params[0] * 60, 0, params[1] > 0 ? params[1] : -1, params[2]);
 		locked = true;
 
 	// Simple multi players mode. (Kiremake)
@@ -458,18 +456,17 @@ a {
 
 			// Update time count.
 			if (!waiting && !pausing && !timeout) {
-				let k = playerIndex >= 0 ? playerIndex : 0;
-				players[k].consumed += spendTime / 1000; // Chessclock style.
-				// players[k].consumed += cubeDiv(spendTime, 1000); // Stopwatch style.
+				players[playerIndex].consumed += spendTime / 1000; // Chessclock style.
+				// players[playerIndex].consumed += cubeDiv(spendTime, 1000); // Stopwatch style.
 
 				// Main time count.
-				if (players[k].count > 0) {
-					players[k].current = players[k].count - players[k].consumed;
-					if (players[k].current <= 0) {
-						players[k].current = players[k].count = players[k].consumed = 0;
+				if (players[playerIndex].count > 0) {
+					players[playerIndex].current = players[playerIndex].count - players[playerIndex].consumed;
+					if (players[playerIndex].current <= 0) {
+						players[playerIndex].current = players[playerIndex].count = players[playerIndex].consumed = 0;
 
 						// Start additional time.
-						if (players[k].addition > 0) {
+						if (players[playerIndex].addition > 0) {
 
 							// Restart.
 							playing = -1;
@@ -480,14 +477,23 @@ a {
 						}
 					}
 
+					// Update all players count for hourglass mode.
+					if (players[playerIndex].bonus < 0) {
+						for (let j = 0; j < playerMax; j++) {
+							if (j != playerIndex) {
+								players[j].current = players[j].count + players[playerIndex].consumed;
+							}
+						}
+					}
+
 				// Additional time count.
 				// (0 Additional time == Free time count)
-				} else if (players[k].addition >= 0) {
-					players[k].current = players[k].consumed;
+				} else if (players[playerIndex].addition >= 0) {
+					players[playerIndex].current = players[playerIndex].consumed;
 
 					// Time out.
-					if (players[k].addition > 0 && players[k].current >= players[k].addition) {
-						players[k].current = players[k].addition;
+					if (players[playerIndex].addition > 0 && players[playerIndex].current >= players[playerIndex].addition) {
+						players[playerIndex].current = players[playerIndex].addition;
 						timeout = true;
 					}
 				}
@@ -569,46 +575,8 @@ a {
 			let p = playing >= 0 && playing < 6 ? 6 - playing : 0;
 			for (let k = 0; k < buttonMax; k++) {
 
-				// 1 button for solo player.
-				if (playerCount <= 1) {
-					if (k < 2) {
-						let s = numbers[k].width * 0.025;
-						cubeAnimate(15, buttons[k].sprite);
-
-						// Waiting.
-						if (waiting) {
-							if (waiting >= 2 && !pausing) { // Wait to restart.
-								cubeDilute(0.6, buttons[k].sprite);
-								cubeExpand(s, buttons[k].sprite);
-								cubeMove(numbers[k].center.x, numbers[k].center.y, buttons[k].sprite);
-							} else if (pausing && k == playerIndex) { // Just starting.
-								cubeDilute(1, buttons[k].sprite);
-								cubeExpand(s - 0.02 * p, buttons[k].sprite);
-								cubeMove(numbers[k].center.x, numbers[k].center.y, buttons[k].sprite);
-							} else { // Waiting.
-								cubeDilute(1, buttons[k].sprite);
-								cubeExpand(s, buttons[k].sprite);
-								cubeMove(numbers[k].center.x, numbers[k].center.y, buttons[k].sprite);
-							}
-
-						// Pausing.
-						} else if (pausing) {
-							cubeDilute(0.6, buttons[k].sprite);
-							cubeExpand(s - 0.02 * p, buttons[k].sprite);
-							cubeMove(numbers[k].center.x, numbers[k].center.y, buttons[k].sprite);
-
-						// Playing.
-						} else {
-							cubeDilute(1 - 0.04 * p, buttons[k].sprite);
-							cubeExpand(s - 0.02 * p, buttons[k].sprite);
-							cubeMove(numbers[k].center.x, numbers[k].center.y, buttons[k].sprite);
-						}
-					} else {
-						cubeAnimate(0, buttons[k].sprite);
-					}
-
-				// Switching buttons for 2 players.
-				} else if (playerCount == 2) {
+				// Switching buttons for 1-2 players.
+				if (playerCount <= 2) {
 					if (k < 2) {
 						let s = numbers[k].width * 0.025;
 						cubeAnimate(15, buttons[k].sprite);
@@ -787,9 +755,21 @@ a {
 
 						// Update time count.
 						if (players[playerIndex].count > 0) {
-							let c = players[playerIndex].count - players[playerIndex].consumed;
-							players[playerIndex].current = players[playerIndex].count = c > 0 ? c : 0;
-							players[playerIndex].consumed = 0;
+
+							// Update all players count.
+							if (players[playerIndex].bonus < 0) {
+								for (let j = 0; j < playerMax; j++) {
+									let c = players[j].count + (j == playerIndex ? -players[playerIndex].consumed : players[playerIndex].consumed);
+									players[j].current = players[j].count = c > countMax ? countMax * 60 : c > 0 ? c : 0;
+								}
+								players[playerIndex].consumed = 0;
+
+							// Update current players count.
+							} else {
+								let c = players[playerIndex].count - players[playerIndex].consumed;
+								players[playerIndex].current = players[playerIndex].count = c > 0 ? c : 0;
+								players[playerIndex].consumed = 0;
+							}
 						}
 					}
 
@@ -805,9 +785,21 @@ a {
 
 					// Update time count on turn end.
 					if (players[playerIndex].count > 0) {
-						let c = players[playerIndex].count - players[playerIndex].consumed + players[playerIndex].bonus;
-						players[playerIndex].current = players[playerIndex].count = c > countMax ? countMax * 60 : c > 0 ? c : 0;
-						players[playerIndex].consumed = 0;
+
+						// Update all players count.
+						if (players[playerIndex].bonus < 0) {
+							for (let j = 0; j < playerMax; j++) {
+								let c = players[j].count + (j == playerIndex ? -players[playerIndex].consumed : players[playerIndex].consumed);
+								players[j].current = players[j].count = c > countMax ? countMax * 60 : c > 0 ? c : 0;
+							}
+							players[playerIndex].consumed = 0;
+
+						// Add bonus time.
+						} else {
+							let c = players[playerIndex].count - players[playerIndex].consumed + players[playerIndex].bonus;
+							players[playerIndex].current = players[playerIndex].count = c > countMax ? countMax * 60 : c > 0 ? c : 0;
+							players[playerIndex].consumed = 0;
+						}
 
 					// Reset additional time count on turn end.
 					} else if (players[playerIndex].addition > 0) {
@@ -832,14 +824,8 @@ a {
 
 				} else {
 
-					// Pause for solo player.
-					if (playerCount <= 1) {
-						waiting = 2;
-
 					// Switch players.
-					} else {
-						playerIndex = cubeMod(playerIndex + 1, playerCount);
-					}
+					playerIndex = cubeMod(playerIndex + 1, playerCount > 2 ? playerCount : 2);
 				}
 
 				// Restart.

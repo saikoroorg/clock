@@ -4,7 +4,7 @@ Worker = class {
 		this.background = "./background.js"; // This script file.
 		this.manifest = "./manifest.json"; // Manifest file.
 		this.contents = ["./"]; // Prefetch contents file.
-		this.replacing = null; // Replacing strings by manifest json.
+		this.replacing = {}; // Replacing table by manifest json.
 		this.cacheKey = null; // Cache key.
 	}
 
@@ -69,18 +69,12 @@ Worker = class {
 						res.text().then((text) => {
 
 							// Replace strings by manifest.
-							if (this.replacing) {
-								if (this.replacing.version) {
-									text = text.replace("<!--$version-->", "#" + this.replacing.version.substr(-4));
-								}
-								if (this.replacing.author && this.replacing.name) {
-									text = text.replace("<!--$author-->", this.replacing.author + "/" + this.replacing.name);
-								}
-								if (this.replacing.short_name) {
-									text = text.replace("<!--$title-->", this.replacing.short_name);
-								}
-								console.log("Replaced: " + text.replace(/\s+/g, " ").substr(-1000));
+							for (let key in this.replacing) {
+								console.log("Replacing: " + key + " -> " + this.replacing[key]);
+								let reg = new RegExp("(<.*class=\"" + key + "\".*>).*(<\/.*>)");
+								text = text.replace(reg, "$1" + this.replacing[key] + "$2");
 							}
+							console.log("Replaced file: " + text.replace(/\s+/g, " ").substr(-1000));
 
 							// Replaced responce.
 							let options = {status: res.status,
@@ -125,7 +119,17 @@ Worker = class {
 				if (res.ok) {
 					res.json().then((manifest) => {
 						console.log("Found manifest: " + JSON.stringify(manifest));
-						this.replacing = manifest;
+						this.replacing = {};
+						if (manifest.version) {
+							this.replacing.version = "#" + manifest.version.substr(-4);
+						}
+						if (manifest.author && manifest.name) {
+							this.replacing.author = manifest.author + "/" + manifest.name;
+						}
+						if (manifest.short_name) {
+							this.replacing.title = manifest.short_name;
+						}
+						console.log("Replacing table: " + JSON.stringify(this.replacing));
 						this.cacheKey = manifest.name + "/" + manifest.version;
 						resolve(manifest);
 					});

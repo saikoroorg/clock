@@ -31,7 +31,7 @@
 		<g transform="translate(64,16)">
 			<path d="M10,8v-4h-4v4h4v4h-4"/>
 		</g>
-		<!-- . : - + [] -->
+		<!-- . : + [^] [-] -->
 		<g transform="translate(0,32)">
 			<path d="M7.5,9.5h1v1h-1Z" stroke-width="1"/>
 		</g>
@@ -39,13 +39,15 @@
 			<path d="M7.5,5.5h1v1h-1Z M7.5,9.5h1v1h-1Z" stroke-width="1"/>
 		</g>
 		<g transform="translate(32,32)">
-			<path d="M6,8h4"/>
-		</g>
-		<g transform="translate(48,32)">
 			<path d="M6,8h4 M8,6v4"/>
 		</g>
-		<g transform="translate(64,32)" stroke="#fff" fill="#fff">
-			<path d="M1,3h14v10h-14Z"/>
+		<g transform="translate(48,32)">
+			<path d="M4,2h8v4h-8Z" stroke="none" fill="#fff"/>
+			<path d="M2,4h12v4h-12Z" stroke="none" fill="#fff"/>
+			<path d="M0,6h16v8h-16Z" stroke="none" fill="#fff"/>
+		</g>
+		<g transform="translate(64,32)">
+			<path d="M0,2h16v12h-16Z" stroke="none" fill="#fff"/>
 		</g>
 	</g>
 </svg>

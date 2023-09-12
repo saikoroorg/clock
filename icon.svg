@@ -1,7 +1,8 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" width="300" height="300">
 	<g stroke-width="2" stroke="none" fill="#eee">
+		<path d="M1,1h18v18h-18Z" fill="#ccc"/>
 		<path d="M3,1h14v6h-14Z M5,5h10v4h-10Z M7,7h6v6h-6Z M5,11h10v4h-10Z M3,13h14v6h-14Z" fill="#888"/>
-		<path d="M7,5h6v4h-6Z M5,13h10v4h-10Z" fill="#ccc"/>
+		<path d="M7,5h6v4h-6Z M5,13h10v4h-10Z" fill="#fff"/>
 		<path d="M5,3h10v4h-10Z M7,11h6v2h-6Z M5,13h10v2h-10Z " fill="#fff"/>
 	</g>
 </svg>
@@ -10,7 +11,7 @@
 	<path d="M0,0h32v32h-32Z" fill="#ccc"/>
 	<g stroke-width="2" stroke="none" fill="#eee" transform="translate(6,6)">
 		<path d="M3,1h14v6h-14Z M5,5h10v4h-10Z M7,7h6v6h-6Z M5,11h10v4h-10Z M3,13h14v6h-14Z" fill="#888"/>
-		<path d="M7,5h6v4h-6Z M5,13h10v4h-10Z" fill="#ccc"/>
+		<path d="M7,5h6v4h-6Z M5,13h10v4h-10Z" fill="#fff"/>
 		<path d="M5,3h10v4h-10Z M7,11h6v2h-6Z M5,13h10v2h-10Z " fill="#fff"/>
 	</g>
 </svg!-->

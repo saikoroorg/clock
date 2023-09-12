@@ -359,6 +359,7 @@ a {
 	var waiting = 1; // Waiting count: 0=playing, 1=w82start, 2=w82restart.
 	var pausing = false; // Pausing on pressing.
 	var timeout = false; // Timeout flag.
+	var hourglass = false; // Hourglass mode.
 	while (true) {
 
 		// Reset count.
@@ -368,6 +369,7 @@ a {
 			waiting = 1;
 			pausing = false;
 			timeout = false;
+			hourglass = bonus < 0;
 
 			// Reset player states.
 			playerCount = player;
@@ -573,6 +575,41 @@ a {
 				players[1].frames[players[1].length] = 11;
 				players[1].length++;
 			}*/
+			
+			// Update angle by screen orientation.
+			if (playerCount == 2) {
+				let sizes = [], localPoses = [];
+				for (let j = 0; j < screenMax; j++) {
+					sizes[j] = cubeScreenSize(screens[j]);
+					localPoses[j] = cubeScreenLocalPos(cubeVector(), screens[j]);
+				}
+				if (localPoses[1].y > localPoses[0].y + sizes[1].y / 2) {
+					numbers[1].angle = 180;
+				} else {
+					numbers[1].angle = 0;
+				}
+			}
+
+			// Update angle for hourglass mode.
+			if (hourglass) {
+				if (playerCount <= 1) {
+					for (let j = 0; j < playerCountMin2; j++) {
+						if (j != playerIndex) {
+							numbers[j].angle = 180;
+						} else {
+							numbers[j].angle = 0;
+						}
+					}
+				} else if (playerCount >= 3) {
+					for (let j = 1; j < buttonMax; j++) {
+						if (j != playerIndex + 1) {
+							numbers[j].angle = 180;
+						} else {
+							numbers[j].angle = 0;
+						}
+					}
+				}
+			}
 
 			// Update button sprites.
 			let p = playing >= 0 && playing < 6 ? 6 - playing : 0;
@@ -582,7 +619,8 @@ a {
 				if (playerCount <= 2) {
 					if (k < 2) {
 						let s = numbers[k].width * 0.025;
-						cubeAnimate(15, buttons[k].sprite);
+						cubeAnimate(hourglass ? 14 : 15, buttons[k].sprite);
+						cubeRotate(numbers[k].angle, buttons[k].sprite);
 
 						// Waiting.
 						if (waiting) {
@@ -610,6 +648,10 @@ a {
 								cubeDilute(1 - 0.04 * p, buttons[k].sprite);
 								cubeExpand(s - 0.02 * p, buttons[k].sprite);
 								cubeMove(numbers[k].center.x, numbers[k].center.y, buttons[k].sprite);
+							} else if (hourglass && playerCount <= 1) { // Reversed hourglass solo player.
+								cubeDilute(0.6, buttons[k].sprite);
+								cubeExpand(s - 0.02 * p, buttons[k].sprite);
+								cubeMove(numbers[k].center.x, numbers[k].center.y, buttons[k].sprite);
 							} else { // Opposite player.
 								cubeDilute(0.2, buttons[k].sprite);
 								cubeExpand(s, buttons[k].sprite);
@@ -624,7 +666,8 @@ a {
 				} else {
 					if (k < playerCount + 1) {
 						let s = numbers[k].width * (k > 0 ? 0.023 : 0.025);
-						cubeAnimate(15, buttons[k].sprite);
+						cubeAnimate(hourglass ? 14 : 15, buttons[k].sprite);
+						cubeRotate(numbers[k].angle, buttons[k].sprite);
 
 						// Waiting to start.
 						if (waiting == 1) {
@@ -671,20 +714,6 @@ a {
 					} else {
 						cubeAnimate(0, buttons[k].sprite);
 					}
-				}
-			}
-
-			// Update number angle.
-			if (playerCount == 2) {
-				let sizes = [], localPoses = [];
-				for (let j = 0; j < screenMax; j++) {
-					sizes[j] = cubeScreenSize(screens[j]);
-					localPoses[j] = cubeScreenLocalPos(cubeVector(), screens[j]);
-				}
-				if (localPoses[1].y > localPoses[0].y + sizes[1].y / 2) {
-					numbers[1].angle = 180;
-				} else {
-					numbers[1].angle = 0;
 				}
 			}
 

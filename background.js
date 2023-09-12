@@ -3,14 +3,12 @@ Worker = class {
 	constructor() {
 		this.background = "./background.js"; // This script file.
 		this.manifest = "./manifest.json"; // Manifest file.
-		this.contents = ["./"]; // Prefetch contents file.
 		this.replacing = {}; // Replacing table by manifest json.
 		this.cacheKey = null; // Cache key.
 	}
 
 	// Get file from cache or fetch.
-	cacheOrFetch(req, cacheKey) {
-		let url = req.url ? req.url : req;
+	cacheOrFetch(url, cacheKey) {
 		return new Promise((resolve) => {
 
 			// Get cached file.
@@ -44,20 +42,21 @@ Worker = class {
 	}
 
 	// Fetch and cache.
-	fetchAndCache(req, cacheKey) {
-		let url = req.url ? req.url : req;
+	fetchAndCache(url, cacheKey) {
 
 		// Cache the fetched file.
 		console.log("Fetch and cache: " + url);
-		return fetch(req).then((res) => {
+		return fetch(url).then((res) => {
 			if (res.ok) {
 				let contentType = res.headers.get("Content-Type");
 				if (!contentType.match("text/html")) {
 
-					console.log("Cache the fetched file: " + url + " to " + cacheKey + " -> " + res.statusText);
-					self.caches.open(cacheKey).then((cache) => {
-						cache.put(url, res.clone());
-					});
+					if (cacheKey) {
+						console.log("Cache the fetched file: " + url + " to " + cacheKey + " -> " + res.statusText);
+						self.caches.open(cacheKey).then((cache) => {
+							cache.put(url, res.clone());
+						});
+					}
 
 					// Returns fetched response.
 					console.log("Returns fetched response. -> " + res.statusText);
@@ -67,6 +66,7 @@ Worker = class {
 				} else {
 					return new Promise((resolve) => {
 						res.text().then((text) => {
+							console.log("Fetched file: " + text.replace(/\s+/g, " ").substr(-1000));
 
 							// Replace strings by manifest.
 							for (let key in this.replacing) {
@@ -83,10 +83,12 @@ Worker = class {
 							res = new Response(text, options);
 
 							// Cache the replaced file.
-							console.log("Cache the replaced file: " + url + " to " + cacheKey + " -> " + res.statusText + " : " + text.replace(/\s+/g, " ").substr(-1000));
-							self.caches.open(cacheKey).then((cache) => {
-								cache.put(url, res.clone());
-							});
+							if (cacheKey) {
+								console.log("Cache the replaced file: " + url + " to " + cacheKey + " -> " + res.statusText + " : " + text.replace(/\s+/g, " ").substr(-1000));
+								self.caches.open(cacheKey).then((cache) => {
+									cache.put(url, res.clone());
+								});
+							}
 
 							// Resolves by replaced response.
 							console.log("Resolves by replaced response. -> " + res.statusText);
@@ -103,19 +105,14 @@ Worker = class {
 		});
 	}
 
-	// Prefetch and cache all.
-	prefetch(reqs, cacheKey) {
-		console.log("Prefetch.");
-		return Promise.all(reqs.map((req) => {
-			return this.fetchAndCache(req, cacheKey);
-		}));
-	}
-
 	// Get manifest file from cache or fetch to start.
 	start() {
 		console.log("Start worker.");
 		return new Promise((resolve) => {
-			this.cacheOrFetch(new Request(this.manifest), "*", null).then((res) => {
+
+			// Get cache or fetch manifest file.
+			console.log("Get cache or fetch: " + this.manifest);
+			this.cacheOrFetch(this.manifest, "*").then((res) => {
 				if (res.ok) {
 					res.json().then((manifest) => {
 						console.log("Found manifest: " + JSON.stringify(manifest));
@@ -132,16 +129,45 @@ Worker = class {
 						console.log("Replacing table: " + JSON.stringify(this.replacing));
 						this.cacheKey = manifest.name + "/" + manifest.version;
 						resolve(manifest);
+					}).catch((error) => {
+						console.log(error.message);
 					});
 				}
 			});
 		});
 	}
 
-	// Fetch manifest file to renew.
+	// Prefetch all content files to renew.
 	renew() {
 		console.log("Renew worker.");
-		return this.fetchAndCache(this.manifest, "*", null);
+		return new Promise((resolve) => {
+
+			// Fetch manifest file.
+			let url = this.manifest;
+			console.log("Fetch new manifest: " + url);
+			return fetch(url).then((res) => {
+				if (res.ok) {
+					res.json().then((manifest) => {
+						console.log("Fetched new manifest: " + JSON.stringify(manifest));
+						let cacheKey = manifest.name + "/" + manifest.version;
+
+						// Prefetch all content files.
+						console.log("Prefetch content files.");
+						Promise.all(manifest.contents.map((content) => {
+							return this.fetchAndCache(content, cacheKey);
+						})).then(() => {
+
+							console.log("Cache new manifest: " + url);
+							self.caches.open("*").then((cache) => {
+								cache.put(url, new Response(manifest));
+							});
+
+							resolve();
+						});
+					});
+				}
+			});
+		});
 	}
 };
 var worker = new Worker();
@@ -183,18 +209,15 @@ if (!self || !self.registration) {
 		evt.waitUntil(worker.start());
 
 		// Delete old cache files when the cache version updated.
-		evt.waitUntil(worker.deleteOldCache());
+		evt.waitUntil(worker.deleteOldCache(worker.cacheKey));
 
-		// Prefetch and cache all new contents.
-		evt.waitUntil(orker.prefetch(worker.contents, worker.cacheKey));
+		// Update manifest file for next install.
+		evt.waitUntil(worker.renew());
 	});
 
 	// Event on activating worker.
 	self.addEventListener("activate", (evt) => {
 		console.log("Activate worker: " + worker.background);
-
-		// Update manifest file for next install.
-		evt.waitUntil(worker.renew());
 	});
 
 	// Event on fetching network request.
@@ -205,6 +228,6 @@ if (!self || !self.registration) {
 		evt.waitUntil(worker.start());
 
 		// Get cache or fetch and return response.
-		evt.respondWith(worker.cacheOrFetch(evt.request, worker.cacheKey));
+		evt.respondWith(worker.cacheOrFetch(evt.request.url, worker.cacheKey));
 	});
 }

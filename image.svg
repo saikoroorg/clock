@@ -1,53 +1,55 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80" width="200" height="200">
-	<g stroke-linecap="square" stroke-width="2" stroke="#000" fill="none">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="200" height="200">
+	<g stroke-linecap="square" stroke-width="2" stroke="#000" fill="none" transform="translate(2,2)">
 		<!-- 0 .. 9 -->
 		<g transform="translate(0,0)">
 			<path d="M6,4h4v8h-4v-8"/>
 		</g>
-		<g transform="translate(16,0)">
+		<g transform="translate(20,0)">
 			<path d="M8,4v8"/>
 		</g>
-		<g transform="translate(32,0)">
+		<g transform="translate(40,0)">
 			<path d="M6,4h4v4h-4v4h4"/>
 		</g>
-		<g transform="translate(48,0)">
+		<g transform="translate(60,0)">
 			<path d="M6,4h4v4M6,8h4v4h-4"/>
 		</g>
-		<g transform="translate(64,0)">
+		<g transform="translate(80,0)">
 			<path d="M6,4v4h4M10,4v8"/>
 		</g>
-		<g transform="translate(0,16)">
+		<g transform="translate(0,20)">
 			<path d="M10,4h-4v4h4v4h-4"/>
 		</g>
-		<g transform="translate(16,16)">
+		<g transform="translate(20,20)">
 			<path d="M10,4h-4v8h4v-4h-4"/>
 		</g>
-		<g transform="translate(32,16)">
+		<g transform="translate(40,20)">
 			<path d="M6,6v-2h4v8"/>
 		</g>
-		<g transform="translate(48,16)">
+		<g transform="translate(60,20)">
 			<path d="M10,4h-4v4h4v4h-4v-4h4v-4"/>
 		</g>
-		<g transform="translate(64,16)">
+		<g transform="translate(80,20)">
 			<path d="M10,8v-4h-4v4h4v4h-4"/>
 		</g>
-		<!-- . : + [^] [-] -->
-		<g transform="translate(0,32)">
+		<!-- . : [^] [^] [-] -->
+		<g transform="translate(0,40)">
 			<path d="M7.5,9.5h1v1h-1Z" stroke-width="1"/>
 		</g>
-		<g transform="translate(16,32)">
+		<g transform="translate(20,40)">
 			<path d="M7.5,5.5h1v1h-1Z M7.5,9.5h1v1h-1Z" stroke-width="1"/>
 		</g>
-		<g transform="translate(32,32)">
-			<path d="M6,8h4 M8,6v4"/>
+		<g transform="translate(40,40)">
+			<!--path d="M6,8h4 M8,6v4"/-->
+			<path d="M4,2h8v4h-8Z" stroke="none" fill="#eee"/>
+			<path d="M2,4h12v4h-12Z" stroke="none" fill="#eee"/>
+			<path d="M0,6h16v8h-16Z" stroke="none" fill="#eee"/>
 		</g>
-		<g transform="translate(48,32)">
-			<path d="M4,2h8v4h-8Z" stroke="none" fill="#fff"/>
-			<path d="M2,4h12v4h-12Z" stroke="none" fill="#fff"/>
-			<path d="M0,6h16v8h-16Z" stroke="none" fill="#fff"/>
+		<g transform="translate(60,40)">
+			<path d="M2,2h12v4h-12Z" stroke="none" fill="#eee"/>
+			<path d="M0,4h16v8h-16Z" stroke="none" fill="#eee"/>
 		</g>
-		<g transform="translate(64,32)">
-			<path d="M0,2h16v12h-16Z" stroke="none" fill="#fff"/>
+		<g transform="translate(80,40)">
+			<path d="M0,2h16v12h-16Z" stroke="none" fill="#eee"/>
 		</g>
 	</g>
 </svg>

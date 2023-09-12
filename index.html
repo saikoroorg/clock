@@ -619,7 +619,7 @@ a {
 				if (playerCount <= 2) {
 					if (k < 2) {
 						let s = numbers[k].width * 0.025;
-						cubeAnimate(hourglass ? 14 : 15, buttons[k].sprite);
+						cubeAnimate(hourglass ? 14 : 14, buttons[k].sprite);
 						cubeRotate(numbers[k].angle, buttons[k].sprite);
 
 						// Waiting.
@@ -665,8 +665,8 @@ a {
 				// Cyclic buttons for 3+ playres.
 				} else {
 					if (k < playerCount + 1) {
-						let s = numbers[k].width * (k > 0 ? 0.023 : 0.025);
-						cubeAnimate(hourglass ? 14 : 15, buttons[k].sprite);
+						let s = numbers[k].width * 0.025;
+						cubeAnimate(hourglass ? 14 : 14, buttons[k].sprite);
 						cubeRotate(numbers[k].angle, buttons[k].sprite);
 
 						// Waiting to start.
@@ -735,13 +735,13 @@ a {
 				for (let i = 0; i < numberMax; i++) {
 					if (j < playerCount + 1 && i < numbers[j].length) {
 						cubeAnimate(players[k].frames[i], numbers[j].sprites[i]);
-						let s = numbers[j].width * 0.04, sx = 0;
+						let s = numbers[j].width * 0.05, sx = 0;
 						cubeExpand(s / (numbers[j].length + 1), numbers[j].sprites[i]);
 						cubeRotate(numbers[j].angle, numbers[j].sprites[i]);
 						if (numbers[j].angle == 180) {
-							sx = numbers[j].width * (0.5 - (numbers[j].length - i) / (numbers[j].length + 1));
+							sx = numbers[j].width * 0.8 * (0.5 - (numbers[j].length - i) / (numbers[j].length + 1));
 						} else {
-							sx = -numbers[j].width * (0.5 - (numbers[j].length - i) / (numbers[j].length + 1));
+							sx = -numbers[j].width * 0.8 * (0.5 - (numbers[j].length - i) / (numbers[j].length + 1));
 						}
 						cubeMove(numbers[j].center.x + sx, numbers[j].center.y, numbers[j].sprites[i]);
 					} else {

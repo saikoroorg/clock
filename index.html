@@ -283,11 +283,12 @@ a {
 </script><!--/Menu-->
 <!--Main--><script>(async()=>{
 
-	// Resize screen.
+	// Screen.
 	const screenMax = 2;
 	var screens = [], joypads = [];
+	const screenWidth = 200, screenHeight = 150;
 	for (let j = screenMax - 1; j >= 0; j--) {
-		screens[j] = cubeScreen("screen", 40, 30);
+		screens[j] = cubeScreen("screen", screenWidth, screenHeight);
 		joypads[j] = cubeJoypad(screens[j]);
 	}
 	//cubeResizeScreen(80, 120);
@@ -298,8 +299,8 @@ a {
 	var playerIndex = 0; // Current player index.
 	var playerCountMin2 = 2; // Player count for hourglass mode.
 
-	// Player state.
-	PlayerState = class {
+	// Player class.
+	Player = class {
 		constructor() {
 			this.count = 0; // Time count.
 			this.addition = 0; // Additional time count.
@@ -311,46 +312,39 @@ a {
 		}
 	};
 
-	// Create player states.
+	// Create players.
 	var players = [];
 	for (let j = 0; j < playerMax; j++) {
-		players[j] = new PlayerState();
+		players[j] = new Player();
 	}
 
-	// Button sprite.
-	ButtonSprite = class {
-		constructor() {
-			this.sprite = null;
-		}
-	};
-
-	// Create button sprites.
-	const buttonMax = playerMax + 1; // Maximum button count.
-	var buttons = [];
-	for (let k = 0; k < buttonMax; k++) {
-		buttons[k] = new ButtonSprite();
-		buttons[k].sprite = await cubeSprite("image.svg", 40, 40);
-	}
-
-	// Number sprite.
-	NumberSprite = class {
-		constructor() {
-			this.sprites = []; // Sprites.
-			this.screen = null; // Target screen.
-			this.length = 0; // Sprite length.
-			this.center = cubeVector(); // Center position.
-			this.width = 0; // Width of sprite.
-			this.angle = 0; // Sprite angle.
-		}
-	};
-
-	// Create number sprites.
+	// Clock.
+	const clockMax = playerMax + 1; // Maximum clock count.
 	//const numberMax = 6; // Maximum number of digits.
-	var numbers = [];
-	for (let j = 0; j < buttonMax; j++) {
-		numbers[j] = new NumberSprite();
-		for (let i = 0; i < numberMax; i++) {
-			numbers[j].sprites[i] = await cubeSprite("image.svg", 40, 40);
+	var clockCount = 2; // Clock count.
+	const clockScale = 4;
+	const buttonWidth = numberWidth = 40;
+
+	// Clock class.
+	Clock = class {
+		constructor() {
+			this.button = null; // Button sprite.
+			this.screen = null; // Target screen.
+			this.scale = 1; // Sprite scale.
+			this.angle = 0; // Sprite angle.
+			this.numbers = []; // Number sprites.
+			this.length = 0; // Number sprite length.
+			this.center = cubeVector(); // Number center position.
+		}
+	};
+
+	// Create clocks.
+	var clocks = [];
+	for (let k = 0; k < clockMax; k++) {
+		clocks[k] = new Clock();
+		clocks[k].button = await cubeSprite("image.svg", buttonWidth, buttonWidth);
+		for (let j = 0; j < numberMax; j++) {
+			clocks[k].numbers[j] = await cubeSprite("image.svg", numberWidth, numberWidth);
 		}
 	}
 
@@ -375,6 +369,7 @@ a {
 			playerCount = player;
 			playerIndex = -1;
 			playerCountMin2 = playerCount > 2 ? playerCount : 2; // Minimum 2 players for hourglass mode.
+			clockCount = playerCount <= 2 ? playerCount : playerCount + 1; // Add playing button on 3+ players mode.
 			for (let j = 0; j < playerCountMin2; j++) {
 				players[j].count = players[j].current = count;
 				players[j].addition = addition;
@@ -383,66 +378,61 @@ a {
 			}
 
 			// Reset layouts.
-			let sizes = [];
-			for (let j = 0; j < screenMax; j++) {
-				sizes[j] = cubeScreenSize(screens[j]);
-			}
-
 			// 1 Screen for solo player.
 			if (playerCount <= 1) {
 				cubeEnableScreen(false, screens[1]);
 				for (let j = 0; j < 1; j++) {
-					numbers[j].screen = screens[j];
-					numbers[j].center.x = sizes[j].x / 2;
-					numbers[j].center.y = sizes[j].y / 2;
-					numbers[j].width = sizes[j].x * 0.8;
-					numbers[j].angle = 0;
+					clocks[j].screen = screens[j];
+					clocks[j].center.x = screenWidth / 2;
+					clocks[j].center.y = screenHeight / 2;
+					clocks[j].scale = clockScale;
+					clocks[j].angle = 0;
 				}
 
 			// 2 Screens for 2 players.
 			} else if (playerCount <= 2) {
 				cubeEnableScreen(true, screens[1]);
 				for (let j = 0; j < 2; j++) {
-					numbers[j].screen = screens[j];
-					numbers[j].center.x = sizes[j].x / 2;
-					numbers[j].center.y = sizes[j].y / 2;
-					numbers[j].width = sizes[j].x * 0.8;
-					numbers[j].angle = 0;
+					clocks[j].screen = screens[j];
+					clocks[j].center.x = screenWidth / 2;
+					clocks[j].center.y = screenHeight / 2;
+					clocks[j].scale = clockScale;
+					clocks[j].angle = 0;
 				}
 
 			// 2 Screens for 3+ players.
 			} else {
 				cubeEnableScreen(true, screens[1]);
-				numbers[0].screen = screens[0];
-				numbers[0].center.x = sizes[0].x / 2;
-				numbers[0].center.y = sizes[0].y / 2;
-				numbers[0].width = sizes[0].x * 0.8;
-				numbers[0].angle = 0;
+				clocks[0].screen = screens[0];
+				clocks[0].center.x = screenWidth / 2;
+				clocks[0].center.y = screenHeight / 2;
+				clocks[0].scale = clockScale;
+				clocks[0].angle = 0;
 
 				if (playerCount <= 4) {
 					for (let j = 0; j < playerCount; j++) {
-						numbers[j + 1].screen = screens[1];
-						numbers[j + 1].center.x = sizes[1].x * (j + 1) / (playerCount + 1);
-						numbers[j + 1].center.y = sizes[1].y / 2;
-						numbers[j + 1].width = sizes[1].x * 0.8 / playerCount;
-						numbers[j + 1].angle = 0;
+						clocks[j + 1].screen = screens[1];
+						clocks[j + 1].center.x = screenWidth * (j + 1) / (playerCount + 1);
+						clocks[j + 1].center.y = screenHeight / 2;
+						clocks[j + 1].scale = clockScale / playerCount;
+						clocks[j + 1].angle = 0;
 					}
 				} else {
 					let playerCount2 = cubeDiv(playerCount, 2);
 					let playerCount1 = playerCount - playerCount2;
 					for (let j = 0; j < playerCount1; j++) {
-						numbers[j + 1].screen = screens[1];
-						numbers[j + 1].center.x = sizes[1].x * (j + 1) / (playerCount1 + 1);
-						numbers[j + 1].center.y = sizes[1].y * 1 / 3;
-						numbers[j + 1].width = sizes[1].x * 0.8 / playerCount1;
-						numbers[j + 1].angle = 0;
+						clocks[j + 1].screen = screens[1];
+						clocks[j + 1].center.x = screenWidth * (j + 1) / (playerCount1 + 1);
+						clocks[j + 1].center.y = screenHeight * 1 / 3;
+						clocks[j + 1].scale = clockScale / playerCount1;
+						clocks[j + 1].angle = 0;
 					}
 					for (let j = playerCount1; j < playerCount; j++) {
-						numbers[j + 1].screen = screens[1];
-						numbers[j + 1].center.x = sizes[1].x * (j - playerCount1 + 1) / (playerCount2 + 1);
-						numbers[j + 1].center.y = sizes[1].y * 2 / 3;
-						numbers[j + 1].width = sizes[1].x * 0.8 / playerCount1;
-						numbers[j + 1].angle = 0;
+						clocks[j + 1].screen = screens[1];
+						clocks[j + 1].center.x = screenWidth * (j - playerCount1 + 1) / (playerCount2 + 1);
+						clocks[j + 1].center.y = screenHeight * 2 / 3;
+						clocks[j + 1].scale = clockScale / playerCount1;
+						clocks[j + 1].angle = 0;
 					}
 				}
 			}
@@ -461,12 +451,15 @@ a {
 			if (!waiting && !pausing && !timeout) {
 				players[playerIndex].consumed += spendTime / 1000; // Chessclock style.
 				// players[playerIndex].consumed += cubeDiv(spendTime, 1000); // Stopwatch style.
-				if (players[playerIndex].consumed > players[playerIndex].count) {
-					players[playerIndex].consumed = players[playerIndex].count;
-				}
 
 				// Main time count.
 				if (players[playerIndex].count > 0) {
+
+					// Round negative clocks for hourglass mode.
+					if (players[playerIndex].consumed > players[playerIndex].count) {
+						players[playerIndex].consumed = players[playerIndex].count;
+					}
+
 					players[playerIndex].current = players[playerIndex].count - players[playerIndex].consumed;
 					if (players[playerIndex].current <= 0) {
 
@@ -577,188 +570,203 @@ a {
 			}*/
 			
 			// Update angle by screen orientation.
+			let portrait = false;
 			if (playerCount == 2) {
-				let sizes = [], localPoses = [];
+				let localPoses = [];
 				for (let j = 0; j < screenMax; j++) {
-					sizes[j] = cubeScreenSize(screens[j]);
 					localPoses[j] = cubeScreenLocalPos(cubeVector(), screens[j]);
 				}
-				if (localPoses[1].y > localPoses[0].y + sizes[1].y / 2) {
-					numbers[1].angle = 180;
+				if (localPoses[1].y > localPoses[0].y + screenHeight / 2) {
+					portrait = true;
+					clocks[1].angle = 180;
 				} else {
-					numbers[1].angle = 0;
+					clocks[1].angle = 0;
 				}
 			}
 
 			// Update angle for hourglass mode.
 			if (hourglass) {
+
+				// For solo player.
 				if (playerCount <= 1) {
 					for (let j = 0; j < playerCountMin2; j++) {
-						if (j != playerIndex) {
-							numbers[j].angle = 180;
+						if (waiting != 1 && j != playerIndex) {
+							clocks[j].angle = 180;
 						} else {
-							numbers[j].angle = 0;
+							clocks[j].angle = 0;
 						}
 					}
-				} else if (playerCount >= 3) {
-					for (let j = 1; j < buttonMax; j++) {
-						if (j != playerIndex + 1) {
-							numbers[j].angle = 180;
+
+				// For 2 players without portrait mode.
+				} else if (playerCount <= 2 && !portrait) {
+					for (let j = 0; j < playerCountMin2; j++) {
+						if (waiting != 1 && j != playerIndex) {
+							clocks[j].angle = 180;
 						} else {
-							numbers[j].angle = 0;
+							clocks[j].angle = 0;
+						}
+					}
+
+				// For 3+ players.
+				} else if (playerCount >= 3) {
+					for (let j = 1; j < clockMax; j++) {
+						if (j != playerIndex + 1) {
+							clocks[j].angle = 180;
+						} else {
+							clocks[j].angle = 0;
 						}
 					}
 				}
 			}
 
 			// Update button sprites.
-			let p = playing >= 0 && playing < 6 ? 6 - playing : 0;
-			for (let k = 0; k < buttonMax; k++) {
+			let p = playing >= 0 && playing < 6 ? 1 - 0.05 * (6 - playing) : 1;
+			for (let k = 0; k < clockMax; k++) {
 
-				// Switching buttons for 1-2 players.
+				// Switching clocks for 1-2 players.
 				if (playerCount <= 2) {
-					if (k < 2) {
-						let s = numbers[k].width * 0.025;
-						cubeAnimate(hourglass ? 14 : 14, buttons[k].sprite);
-						cubeRotate(numbers[k].angle, buttons[k].sprite);
+					if (k < clockCount) {
+						let s = clocks[k].scale;
+						cubeAnimate(hourglass ? 14 : 15, clocks[k].button);
+						cubeRotate(clocks[k].angle, clocks[k].button);
 
 						// Waiting.
 						if (waiting) {
 							if (waiting >= 2 && !pausing) { // Wait to restart.
-								cubeDilute(0.6, buttons[k].sprite);
-								cubeExpand(s, buttons[k].sprite);
-								cubeMove(numbers[k].center.x, numbers[k].center.y, buttons[k].sprite);
+								cubeDilute(0.6, clocks[k].button);
+								cubeExpand(s, clocks[k].button);
+								cubeMove(clocks[k].center.x, clocks[k].center.y, clocks[k].button);
 							} else if (pausing && k == playerIndex) { // Just starting.
-								cubeDilute(1, buttons[k].sprite);
-								cubeExpand(s - 0.02 * p, buttons[k].sprite);
-								cubeMove(numbers[k].center.x, numbers[k].center.y, buttons[k].sprite);
+								cubeDilute(1, clocks[k].button);
+								cubeExpand(s * p, clocks[k].button);
+								cubeMove(clocks[k].center.x, clocks[k].center.y, clocks[k].button);
 							} else if (playerIndex < 0) { // Waiting.
-								cubeDilute(1, buttons[k].sprite);
-								cubeExpand(s, buttons[k].sprite);
-								cubeMove(numbers[k].center.x, numbers[k].center.y, buttons[k].sprite);
+								cubeDilute(1, clocks[k].button);
+								cubeExpand(s, clocks[k].button);
+								cubeMove(clocks[k].center.x, clocks[k].center.y, clocks[k].button);
 							} else { // Opposite player.
-								cubeDilute(0.2, buttons[k].sprite);
-								cubeExpand(s, buttons[k].sprite);
-								cubeMove(numbers[k].center.x, numbers[k].center.y, buttons[k].sprite);
+								cubeDilute(0.2, clocks[k].button);
+								cubeExpand(s, clocks[k].button);
+								cubeMove(clocks[k].center.x, clocks[k].center.y, clocks[k].button);
 							}
 
 						// Playing.
 						} else {
 							if (k == playerIndex) { // Playing.
-								cubeDilute(1 - 0.04 * p, buttons[k].sprite);
-								cubeExpand(s - 0.02 * p, buttons[k].sprite);
-								cubeMove(numbers[k].center.x, numbers[k].center.y, buttons[k].sprite);
+								cubeDilute(p, clocks[k].button);
+								cubeExpand(s * p, clocks[k].button);
+								cubeMove(clocks[k].center.x, clocks[k].center.y, clocks[k].button);
 							} else if (hourglass && playerCount <= 1) { // Reversed hourglass solo player.
-								cubeDilute(0.6, buttons[k].sprite);
-								cubeExpand(s - 0.02 * p, buttons[k].sprite);
-								cubeMove(numbers[k].center.x, numbers[k].center.y, buttons[k].sprite);
+								cubeDilute(0.6, clocks[k].button);
+								cubeExpand(s * p, clocks[k].button);
+								cubeMove(clocks[k].center.x, clocks[k].center.y, clocks[k].button);
 							} else { // Opposite player.
-								cubeDilute(0.2, buttons[k].sprite);
-								cubeExpand(s, buttons[k].sprite);
-								cubeMove(numbers[k].center.x, numbers[k].center.y, buttons[k].sprite);
+								cubeDilute(0.2, clocks[k].button);
+								cubeExpand(s, clocks[k].button);
+								cubeMove(clocks[k].center.x, clocks[k].center.y, clocks[k].button);
 							}
 						}
 					} else {
-						cubeAnimate(0, buttons[k].sprite);
+						cubeAnimate(0, clocks[k].button);
 					}
 
-				// Cyclic buttons for 3+ playres.
+				// Cyclic clocks for 3+ playres.
 				} else {
-					if (k < playerCount + 1) {
-						let s = numbers[k].width * 0.025;
-						cubeAnimate(hourglass ? 14 : 14, buttons[k].sprite);
-						cubeRotate(numbers[k].angle, buttons[k].sprite);
+					if (k < clockCount) {
+						let s = clocks[k].scale;
+						cubeAnimate(hourglass ? 14 : 15, clocks[k].button);
+						cubeRotate(clocks[k].angle, clocks[k].button);
 
 						// Waiting to start.
 						if (waiting == 1) {
 							if (k == 0) { // Playing.
 								if (pausing) { // Just starting.
-									cubeDilute(1, buttons[k].sprite);
-									cubeExpand(s - 0.02 * p, buttons[k].sprite);
-									cubeMove(numbers[k].center.x, numbers[k].center.y, buttons[k].sprite);
+									cubeDilute(1, clocks[k].button);
+									cubeExpand(s * p, clocks[k].button);
+									cubeMove(clocks[k].center.x, clocks[k].center.y, clocks[k].button);
 								} else { // Waiting.
-									cubeDilute(1, buttons[k].sprite);
-									cubeExpand(s, buttons[k].sprite);
-									cubeMove(numbers[k].center.x, numbers[k].center.y, buttons[k].sprite);
+									cubeDilute(1, clocks[k].button);
+									cubeExpand(s, clocks[k].button);
+									cubeMove(clocks[k].center.x, clocks[k].center.y, clocks[k].button);
 								}
 							} else { // Another players.
-								cubeDilute(0.2, buttons[k].sprite);
-								cubeExpand(s, buttons[k].sprite);
-								cubeMove(numbers[k].center.x, numbers[k].center.y, buttons[k].sprite);
+								cubeDilute(0.2, clocks[k].button);
+								cubeExpand(s, clocks[k].button);
+								cubeMove(clocks[k].center.x, clocks[k].center.y, clocks[k].button);
 							}
 
 						// Playing.
 						} else {
 							if (k == 0 || k == playerIndex + 1) { // Playing or target player.
 								if (waiting >= 2 && !pausing) { // Wait to restart.
-										cubeDilute(0.6, buttons[k].sprite);
-										cubeExpand(s, buttons[k].sprite);
-										cubeMove(numbers[k].center.x, numbers[k].center.y, buttons[k].sprite);
+										cubeDilute(0.6, clocks[k].button);
+										cubeExpand(s, clocks[k].button);
+										cubeMove(clocks[k].center.x, clocks[k].center.y, clocks[k].button);
 								} else {
 									if (k == 0) { // Playing
-										cubeDilute(1 - 0.04 * p, buttons[k].sprite);
-										cubeExpand(s - 0.02 * p, buttons[k].sprite);
-										cubeMove(numbers[k].center.x, numbers[k].center.y, buttons[k].sprite);
+										cubeDilute(p, clocks[k].button);
+										cubeExpand(s * p, clocks[k].button);
+										cubeMove(clocks[k].center.x, clocks[k].center.y, clocks[k].button);
 									} else if (k == playerIndex + 1) { // Target player.
-										cubeDilute(1 - 0.04 * p, buttons[k].sprite);
-										cubeExpand(s - 0.005 * p, buttons[k].sprite);
-										cubeMove(numbers[k].center.x, numbers[k].center.y, buttons[k].sprite);
+										cubeDilute(p, clocks[k].button);
+										cubeExpand(s * p, clocks[k].button);
+										cubeMove(clocks[k].center.x, clocks[k].center.y, clocks[k].button);
 									}
 								}
 							} else { // Another players.
-								cubeDilute(0.2, buttons[k].sprite);
-								cubeExpand(s, buttons[k].sprite);
-								cubeMove(numbers[k].center.x, numbers[k].center.y, buttons[k].sprite);
+								cubeDilute(0.2, clocks[k].button);
+								cubeExpand(s, clocks[k].button);
+								cubeMove(clocks[k].center.x, clocks[k].center.y, clocks[k].button);
 							}
 						}
 					} else {
-						cubeAnimate(0, buttons[k].sprite);
+						cubeAnimate(0, clocks[k].button);
 					}
 				}
 			}
 
 			// Update number sprites.
-			for (let j = 0; j < buttonMax; j++) {
+			for (let j = 0; j < clockMax; j++) {
 				let k = j;
-				if (playerCount >= 3 && j < playerCount + 1) {
+				if (playerCount >= 3 && j < clockCount) {
 					if (j == 0) {
 						k = playerIndex >= 0 ? playerIndex : 0;
 					} else {
 						k = j - 1;
 					}
-					numbers[j].length = players[k].length;
-				} else if (playerCount <= 2 && j < 2) {
-					numbers[j].length = players[k].length;
+					clocks[j].length = players[k].length;
+				} else if (playerCount <= 2 && j < clockCount) {
+					clocks[j].length = players[k].length;
 				} else {
-					numbers[j].length = 0;
+					clocks[j].length = 0;
 				}
 				for (let i = 0; i < numberMax; i++) {
-					if (j < playerCount + 1 && i < numbers[j].length) {
-						cubeAnimate(players[k].frames[i], numbers[j].sprites[i]);
-						let s = numbers[j].width * 0.05, sx = 0;
-						cubeExpand(s / (numbers[j].length + 1), numbers[j].sprites[i]);
-						cubeRotate(numbers[j].angle, numbers[j].sprites[i]);
-						if (numbers[j].angle == 180) {
-							sx = numbers[j].width * 0.8 * (0.5 - (numbers[j].length - i) / (numbers[j].length + 1));
+					if (j < playerCount + 1 && i < clocks[j].length && clocks[j].length > 0) {
+						cubeAnimate(players[k].frames[i], clocks[j].numbers[i]);
+						let s = 1.5 / (clocks[j].length + 1); // l=5: s=1/4
+						cubeExpand(clocks[j].scale * s, clocks[j].numbers[i]);
+						cubeRotate(clocks[j].angle, clocks[j].numbers[i]);
+						let d = (i * 2 + 1) / clocks[j].length - 1; // l=5: d=(-0.8 -0.4 0 +0.4 +0.8)
+						let dx = numberWidth * clocks[j].scale * s * d; // Number sprite real width = 6/20 = 0.3
+						if (clocks[j].angle >= 180) {
+							cubeMove(clocks[j].center.x + dx, clocks[j].center.y, clocks[j].numbers[i]);
 						} else {
-							sx = -numbers[j].width * 0.8 * (0.5 - (numbers[j].length - i) / (numbers[j].length + 1));
+							cubeMove(clocks[j].center.x - dx, clocks[j].center.y, clocks[j].numbers[i]);
 						}
-						cubeMove(numbers[j].center.x + sx, numbers[j].center.y, numbers[j].sprites[i]);
+						//if (!cubeMod(playing,100)){
+						//	console.log("j="+j+"i="+i+" s="+s+" d="+d+" dx="+dx);
+						//}
 					} else {
-						cubeAnimate(0, numbers[j].sprites[i]);
+						cubeAnimate(0, clocks[j].numbers[i]);
 					}
 				}
 			}
 
-			// Draw button sprites.
-			for (let k = 0; k < buttonMax; k++) {
-				cubeDraw(buttons[k].sprite, screens[k > 0 ? 1 : 0]);
-			}
-
-			// Draw number sprites.
+			// Draw button and number sprites.
 			for (let j = 0; j < playerCount + 1; j++) {
-				for (let i = 0; i < numbers[j].length; i++) {
-					cubeDraw(numbers[j].sprites[i], numbers[j].screen);
+				cubeDraw(clocks[j].button, clocks[j].screen);
+				for (let i = 0; i < clocks[j].length; i++) {
+					cubeDraw(clocks[j].numbers[i], clocks[j].screen);
 				}
 			}
 

@@ -153,6 +153,28 @@ a {
 <script>console.log = () => {};</script>
 <script src="background.js"></script>
 <script src="cube-api-0.8.js"></script>
+<!--Common--><script>
+	// Play beep sound.
+	function playBeep(pitch=1, length=0.1) {
+		return new Promise(() => {
+			const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+			const gainNode = audioContext.createGain();
+			gainNode.connect(audioContext.destination);
+			gainNode.gain.value = 0.1;
+			const oscillator = audioContext.createOscillator();
+			oscillator.connect(gainNode);
+			oscillator.type = "square";
+			oscillator.frequency.setValueAtTime(440 * pitch, audioContext.currentTime);
+			oscillator.onended = () => {
+				gain.disconnect(audioContext.destination);
+				oscillator.disconnect(gain);
+				resolve();
+			};
+			oscillator.start();
+			oscillator.stop(length);
+		}); // end of new Promise.
+	}
+</script><!--/Common-->
 <!--Menu--><script>
 	var player = 2; // Player count.
 	var count = 0; // Time count.
@@ -354,6 +376,7 @@ a {
 	var pausing = false; // Pausing on pressing.
 	var timeout = false; // Timeout flag.
 	var hourglass = false; // Hourglass mode.
+	var flashing = false; // Flashing mark.
 	while (true) {
 
 		// Reset count.
@@ -472,6 +495,9 @@ a {
 						// Time out.
 						} else {
 							timeout = true;
+
+							// Time out sound.
+							playBeep(2, 1.5);
 						}
 					}
 
@@ -493,6 +519,9 @@ a {
 					if (players[playerIndex].addition > 0 && players[playerIndex].current >= players[playerIndex].addition) {
 						players[playerIndex].current = players[playerIndex].addition;
 						timeout = true;
+
+						// Time out sound.
+						playBeep(2, 1.5);
 					}
 				}
 			}
@@ -510,19 +539,46 @@ a {
 				}
 
 				// Time separator.
-				let flashing = false;
 				if (!waiting && !pausing && !timeout && j == playerIndex) {
 
 					// Count down on main time count.
 					if (players[j].count > 0) {
 						if (cubeMod(players[j].current * 1000, 1000) < 500) {
 							flashing = true;
+						} else {
+
+							// Main time count sound.
+							if (flashing) {
+								if (players[j].addition <= 0 && players[j].current <= 4) {
+									playBeep(2, 0.5);
+								} else if (players[j].addition <= 0 && players[j].current <= 9) {
+									playBeep(2, 0.1);
+
+								// Play 3 beeps every 30 seconds.
+								} else if (!cubeMod(players[j].current - 0.1, 30)) { // Fix timing to subtract delay 0.1s.
+									playBeep(3, 0.5);
+								}
+							}
+
+							flashing = false;
 						}
 
 					// Count up on additional time count.
 					} else {
 						if (cubeMod(players[j].current * 1000, 1000) >= 500) {
 							flashing = true;
+						} else {
+
+							// Adiitional time count sound.
+							if (flashing) {
+								if (players[j].current >= players[j].addition - 4) {
+									playBeep(2, 0.5);
+								} else if (players[j].current >= players[j].addition - 9) {
+									playBeep(2, 0.1);
+								}
+							}
+
+							flashing = false;
 						}
 					}
 				}

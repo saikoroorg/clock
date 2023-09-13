@@ -576,6 +576,7 @@ a {
 				for (let j = 0; j < screenMax; j++) {
 					localPoses[j] = cubeScreenLocalPos(cubeVector(), screens[j]);
 				}
+				clocks[0].angle = 0;
 				if (localPoses[1].y > localPoses[0].y + screenHeight / 2) {
 					portrait = true;
 					clocks[1].angle = 180;
@@ -620,14 +621,14 @@ a {
 			}
 
 			// Update button sprites.
-			let p = playing >= 0 && playing < 6 ? 1 - 0.05 * (6 - playing) : 1;
+			let p = playing >= 0 && playing < 6 ? 1 - 0.025 * (6 - playing) : 1;
 			for (let k = 0; k < clockMax; k++) {
 
 				// Switching clocks for 1-2 players.
 				if (playerCount <= 2) {
 					if (k < clockCount) {
 						let s = clocks[k].scale;
-						cubeAnimate(hourglass ? 14 : 15, clocks[k].button);
+						cubeAnimate(hourglass && !portrait ? 14 : 15, clocks[k].button);
 						cubeRotate(clocks[k].angle, clocks[k].button);
 
 						// Waiting.
@@ -674,7 +675,7 @@ a {
 				} else {
 					if (k < clockCount) {
 						let s = clocks[k].scale;
-						cubeAnimate(hourglass ? 14 : 15, clocks[k].button);
+						cubeAnimate(hourglass && !portrait ? 14 : 15, clocks[k].button);
 						cubeRotate(clocks[k].angle, clocks[k].button);
 
 						// Waiting to start.
@@ -753,9 +754,6 @@ a {
 						} else {
 							cubeMove(clocks[j].center.x - dx, clocks[j].center.y, clocks[j].numbers[i]);
 						}
-						//if (!cubeMod(playing,100)){
-						//	console.log("j="+j+"i="+i+" s="+s+" d="+d+" dx="+dx);
-						//}
 					} else {
 						cubeAnimate(0, clocks[j].numbers[i]);
 					}

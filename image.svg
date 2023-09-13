@@ -42,12 +42,15 @@
 			<path d="M6,8h4 M8,6v4"/>
 		</g>
 		<g transform="translate(60,40)">
-			<path d="M2,2h12v4h-12Z" stroke="none" fill="#888"/>
-			<path d="M0,4h16v10h-16Z" stroke="none" fill="#888"/>
+			<path d="M0,6h16v10h-16Z" stroke="none" fill="#fff"/>
+			<path d="M1,5h14v10h-14Z" stroke="none" fill="#fff"/>
+			<path d="M2,2h12v6h-12Z" stroke="none" fill="#fff"/>
+			<path d="M1,1h14v3h-14Z" stroke="none" fill="#fff"/>
+			<path d="M0,0h16v3h-16Z" stroke="none" fill="#fff"/>
 		</g>
 		<g transform="translate(80,40)">
-			<path d="M2,2h12v4h-12Z" stroke="none" fill="#fff"/>
-			<path d="M0,4h16v10h-16Z" stroke="none" fill="#fff"/>
+			<path d="M0,3h16v10h-16Z" stroke="none" fill="#fff"/>
+			<path d="M2,1h12v4h-12Z" stroke="none" fill="#fff"/>
 		</g>
 	</g>
 </svg>

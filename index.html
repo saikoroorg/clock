@@ -155,23 +155,25 @@ a {
 <script src="cube-api-0.8.js"></script>
 <!--Common--><script>
 	// Play beep sound.
-	function playBeep(pitch=1, length=0.1) {
-		return new Promise(() => {
-			const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+	function playBeep(cent=0, length=0.1, delay=0) {
+		return new Promise((resolve) => {
+			const audioContext = new window.AudioContext();
 			const gainNode = audioContext.createGain();
 			gainNode.connect(audioContext.destination);
 			gainNode.gain.value = 0.1;
 			const oscillator = audioContext.createOscillator();
 			oscillator.connect(gainNode);
-			oscillator.type = "square";
-			oscillator.frequency.setValueAtTime(440 * pitch, audioContext.currentTime);
+			oscillator.type = "square"; //"sine", "square", "sawtooth", "triangle";
+			oscillator.frequency.setValueAtTime(440, audioContext.currentTime);
+			oscillator.detune.setValueAtTime(cent, audioContext.currentTime);
 			oscillator.onended = () => {
-				gain.disconnect(audioContext.destination);
-				oscillator.disconnect(gain);
+				gainNode.disconnect(audioContext.destination);
+				oscillator.disconnect(gainNode);
 				resolve();
 			};
-			oscillator.start();
-			oscillator.stop(length);
+			console.log("Beep: " + cent + " x " + length + " + " + delay);
+			oscillator.start(delay);
+			oscillator.stop(length + delay);
 		}); // end of new Promise.
 	}
 </script><!--/Common-->
@@ -376,7 +378,7 @@ a {
 	var pausing = false; // Pausing on pressing.
 	var timeout = false; // Timeout flag.
 	var hourglass = false; // Hourglass mode.
-	var flashing = false; // Flashing mark.
+	var beeping = false; // Beep flag.
 	while (true) {
 
 		// Reset count.
@@ -478,13 +480,14 @@ a {
 				// Main time count.
 				if (players[playerIndex].count > 0) {
 
-					// Round negative clocks for hourglass mode.
-					if (players[playerIndex].consumed > players[playerIndex].count) {
-						players[playerIndex].consumed = players[playerIndex].count;
-					}
+					// @todo: Round negative clocks for hourglass mode.
+					//if (players[playerIndex].consumed > players[playerIndex].count) {
+					//	players[playerIndex].consumed = players[playerIndex].count;
+					//}
 
 					players[playerIndex].current = players[playerIndex].count - players[playerIndex].consumed;
 					if (players[playerIndex].current <= 0) {
+						players[playerIndex].current = players[playerIndex].count = players[playerIndex].consumed = 0;
 
 						// Start additional time.
 						if (players[playerIndex].addition > 0) {
@@ -492,12 +495,12 @@ a {
 							// Restart.
 							playing = -1;
 
+							// Additional start sound.
+							playBeep(2400, 0.1);
+
 						// Time out.
 						} else {
 							timeout = true;
-
-							// Time out sound.
-							playBeep(2, 1.5);
 						}
 					}
 
@@ -519,9 +522,6 @@ a {
 					if (players[playerIndex].addition > 0 && players[playerIndex].current >= players[playerIndex].addition) {
 						players[playerIndex].current = players[playerIndex].addition;
 						timeout = true;
-
-						// Time out sound.
-						playBeep(2, 1.5);
 					}
 				}
 			}
@@ -539,46 +539,71 @@ a {
 				}
 
 				// Time separator.
+				let flashing = false;
 				if (!waiting && !pausing && !timeout && j == playerIndex) {
 
 					// Count down on main time count.
 					if (players[j].count > 0) {
 						if (cubeMod(players[j].current * 1000, 1000) < 500) {
-							flashing = true;
+							flashing = beeping = true;
 						} else {
 
 							// Main time count sound.
-							if (flashing) {
-								if (players[j].addition <= 0 && players[j].current <= 4) {
-									playBeep(2, 0.5);
-								} else if (players[j].addition <= 0 && players[j].current <= 9) {
-									playBeep(2, 0.1);
+							if (beeping) {
+								let rest = players[j].current;
 
-								// Play 3 beeps every 30 seconds.
-								} else if (!cubeMod(players[j].current - 0.1, 30)) { // Fix timing to subtract delay 0.1s.
-									playBeep(3, 0.5);
+								// Play long beep last 5 seconds.
+								if (players[j].addition <= 0 && rest < 6) {
+									playBeep(1200, 0.5);
+
+								// Play beep last 10 seconds.
+								} else if (players[j].addition <= 0 && rest < 11) {
+									playBeep(1200, 0.1);
+
+								// Play beep every 10 seconds last 30 seconds.
+								} else if (rest > 0 && rest < 31 && !cubeMod(rest, 10)) {
+									playBeep(1200, 0.1);
+
+								// Play 3 high beeps every 30 seconds.
+								} else if (rest > 0 && !cubeMod(rest, 30)) {
+									playBeep(2400, 0.1, 0.1);
+									playBeep(2400, 0.1, 0.3);
+									playBeep(2400, 0.1, 0.5);
 								}
 							}
-
-							flashing = false;
+							flashing = beeping = false;
 						}
 
 					// Count up on additional time count.
 					} else {
 						if (cubeMod(players[j].current * 1000, 1000) >= 500) {
-							flashing = true;
+							flashing = beeping = true;
 						} else {
 
 							// Adiitional time count sound.
-							if (flashing) {
-								if (players[j].current >= players[j].addition - 4) {
-									playBeep(2, 0.5);
-								} else if (players[j].current >= players[j].addition - 9) {
-									playBeep(2, 0.1);
+							if (beeping) {
+								let rest = players[j].addition - players[j].current + 1;
+
+								// Play long beep last 5 seconds.
+								if (players[j].addition >= 10 && rest < 6) {
+									playBeep(1200, 0.5);
+
+								// Play beep last 10 seconds.
+								} else if (players[j].addition > 0 && rest < 11) {
+									playBeep(1200, 0.1);
+
+								// Play beep every 10 seconds last 30 seconds.
+								} else if (players[j].addition > 0 && rest > 0 && rest < 31 && !cubeMod(rest, 10)) {
+									playBeep(1200, 0.1);
+
+								// Play 3 high beeps every 30 seconds.
+								} else if (players[j].addition > 0 && rest > 0 && !cubeMod(rest, 30)) {
+									playBeep(2400, 0.1, 0.1);
+									playBeep(2400, 0.1, 0.3);
+									playBeep(2400, 0.1, 0.5);
 								}
 							}
-
-							flashing = false;
+							flashing = beeping = false;
 						}
 					}
 				}
@@ -684,7 +709,7 @@ a {
 				if (playerCount <= 2) {
 					if (k < clockCount) {
 						let s = clocks[k].scale;
-						cubeAnimate(hourglass && !portrait ? 14 : 15, clocks[k].button);
+						cubeAnimate(hourglass && !portrait ? 15 : 15, clocks[k].button);
 						cubeRotate(clocks[k].angle, clocks[k].button);
 
 						// Waiting.
@@ -731,7 +756,7 @@ a {
 				} else {
 					if (k < clockCount) {
 						let s = clocks[k].scale;
-						cubeAnimate(hourglass && !portrait ? 14 : 15, clocks[k].button);
+						cubeAnimate(hourglass && !portrait ? 15 : 15, clocks[k].button);
 						cubeRotate(clocks[k].angle, clocks[k].button);
 
 						// Waiting to start.
@@ -915,6 +940,9 @@ a {
 					} else if (playerIndex < 0) {
 						playerIndex = 0;
 					}
+
+					// Start sound.
+					playBeep(2400, 0.1);
 
 				} else {
 

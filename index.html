@@ -154,33 +154,54 @@ a {
 <script src="background.js"></script>
 <script src="cube-api-0.8.js"></script>
 <!--Common--><script>
-	// Beep sound.
-	function playBeep(cent=0, length=0.1, delay=0) {
-		return new Promise((resolve) => {
+	// Sound class
+	Sound = class {
+		constructor() {
 			try {
-				const audioContext = new window.AudioContext();
-				const gainNode = audioContext.createGain();
-				gainNode.connect(audioContext.destination);
-				gainNode.gain.value = 0.1;
-				const oscillator = audioContext.createOscillator();
-				oscillator.connect(gainNode);
-				oscillator.type = "square"; //"sine", "square", "sawtooth", "triangle";
-				oscillator.frequency.setValueAtTime(440, audioContext.currentTime);
-				oscillator.detune.setValueAtTime(cent, audioContext.currentTime);
-				oscillator.onended = () => {
-					gainNode.disconnect(audioContext.destination);
-					oscillator.disconnect(gainNode);
-					audioContext.close();
+				this.audioContext = new window.AudioContext();
+				this.gainNode = this.audioContext.createGain();
+				this.gainNode.connect(this.audioContext.destination);
+				this.gainNode.gain.value = 0.1;
+				this.oscillator = this.audioContext.createOscillator();
+				this.oscillator.connect(this.gainNode);
+				this.oscillator.type = "square"; //"sine", "square", "sawtooth", "triangle";
+				this.oscillator.frequency.setValueAtTime(440, this.audioContext.currentTime);
+				/*
+				this.oscillator.detune.setValueAtTime(cent, this.audioContext.currentTime);
+				this.oscillator.onended = () => {
+					gainNode.disconnect(this.audioContext.destination);
+					this.oscillator.disconnect(gainNode);
+					this.audioContext.close();
 					resolve();
 				};
 				console.log("Beep: " + cent + " x " + length + " + " + delay);
-				oscillator.start(delay);
-				oscillator.stop(length + delay);
+				this.oscillator.start(delay);
+				this.oscillator.stop(length + delay);*/
+				this.started = false;
 			} catch (error) {
 				console.log(error.message);
 			}
-		}); // end of new Promise.
-	}
+		}
+		beep(cent=0, length=0.1, delay=0) {
+			try {
+				console.log("Beep: " + cent + " x " + length + " + " + delay);
+				setTimeout(() => {
+					//console.log("BeepStart.");
+					this.oscillator.detune.setValueAtTime(cent, this.audioContext.currentTime);
+					if (!this.started) {
+						this.oscillator.start();
+						this.started = true;
+					}
+					setTimeout(() => {
+						//console.log("BeepStop.");
+						this.oscillator.detune.setValueAtTime(38400, this.audioContext.currentTime);
+					}, length * 1000);
+				}, delay * 1000);
+			} catch (error) {
+				console.log(error.message);
+			}
+		}
+	};
 </script><!--/Common-->
 <!--Menu--><script>
 	var player = 2; // Player count.
@@ -377,6 +398,9 @@ a {
 		}
 	}
 
+	// Sound.
+	var sound = new Sound();
+
 	// Playing states.
 	//var playing = 0; // Playing count.
 	var waiting = 1; // Waiting state: 0=playing, 1=w82start, 2=w82restart.
@@ -543,7 +567,7 @@ a {
 					counting = false; // Reset flag to avoid continuous beep.
 
 					// High beep.
-					playBeep(2400, 0.1);
+					sound.beep(2400, 0.1);
 
 				// Count down on main time count.
 				} else if (players[playerIndex].count > 0) {
@@ -560,8 +584,8 @@ a {
 					counting = false; // Reset flag to avoid continuous beep.
 
 					// High 2 beeps.
-					playBeep(2400, 0.1);
-					playBeep(2400, 0.3);
+					sound.beep(2400, 0.1);
+					sound.beep(2400, 0.3);
 
 				// Count up on additional time count.
 				} else {
@@ -584,24 +608,24 @@ a {
 					// Long beep last 5 seconds.
 					if (counter < 5) {
 						console.log("Long beep last 5 seconds.");
-						playBeep(1200, 0.5);
+						sound.beep(1200, 0.5);
 
 					// Beep last 10 seconds.
 					} else if (counter < 10) {
 						console.log("Beep last 10 seconds.");
-						playBeep(1200, 0.1);
+						sound.beep(1200, 0.1);
 
 					// Beep every 10 seconds last 30 seconds.
 					} else if (counter < 30 && !cubeMod(counter + 1, 10)) {
 						console.log("Beep every 10 seconds last 30 seconds.");
-						playBeep(1200, 0.1);
+						sound.beep(1200, 0.1);
 
 					// High 3 beeps every 30 seconds.
 					} else if (counter >= 60 && !cubeMod(counter + 1, 30)) {
 						console.log("High 3 beeps every 30 seconds.");
-						playBeep(2400, 0.1, 0.1);
-						playBeep(2400, 0.1, 0.3);
-						playBeep(2400, 0.1, 0.5);
+						sound.beep(2400, 0.1, 0.1);
+						sound.beep(2400, 0.1, 0.3);
+						sound.beep(2400, 0.1, 0.5);
 					}
 					counting = false;
 				}

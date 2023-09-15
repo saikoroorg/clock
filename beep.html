@@ -1,0 +1,196 @@
+<html>
+<head>
+<meta charset="utf-8">
+</head>
+<body>
+<!--Common--><script>
+	// Wait.
+	async function wait(t=1000) {
+		return new Promise(r => setTimeout(r, t));
+	}
+
+	// Play beep sound.
+	function playBeep(cent=0, length=0.1, delay=0) {
+		return new Promise((resolve) => {
+			const audioContext = new window.AudioContext();
+			const gainNode = audioContext.createGain();
+			gainNode.connect(audioContext.destination);
+			gainNode.gain.value = 0.1;
+			const oscillator = audioContext.createOscillator();
+			oscillator.connect(gainNode);
+			oscillator.type = "square"; //"sine", "square", "sawtooth", "triangle";
+			oscillator.frequency.setValueAtTime(440, audioContext.currentTime);
+			oscillator.detune.setValueAtTime(cent, audioContext.currentTime);
+			oscillator.onended = () => {
+				gainNode.disconnect(audioContext.destination);
+				oscillator.disconnect(gainNode);
+				resolve();
+			};
+			console.log("Beep: " + cent + " x " + length + " + " + delay);
+			oscillator.start(delay);
+			oscillator.stop(length + delay);
+		}); // end of new Promise.
+	}
+
+	// Play beep melody.
+	function playMelody(cents=[0], length=0.1) {
+		return new Promise((resolve) => {
+			const audioContext = new window.AudioContext();
+			const gainNode = audioContext.createGain();
+			gainNode.connect(audioContext.destination);
+			gainNode.gain.value = 0.1;
+			const oscillator = audioContext.createOscillator();
+			oscillator.connect(gainNode);
+			oscillator.type = "square"; //"sine", "square", "sawtooth", "triangle";
+			oscillator.frequency.setValueAtTime(440, audioContext.currentTime);
+			for (let i = 0; i < cents.length; i++) {
+				oscillator.detune.setValueAtTime(cents[i], audioContext.currentTime + length * i);
+			}
+			oscillator.onended = () => {
+				gainNode.disconnect(audioContext.destination);
+				oscillator.disconnect(gainNode);
+				resolve();
+			};
+			console.log("Melody: " + cents + " x " + length * cents.length);
+			oscillator.start();
+			oscillator.stop(length * cents.length);
+		}); // end of new Promise.
+	}
+
+	// Play beep melody repeat.
+	function playMerodies(cents=[0], length=0.1, repeat=1) {
+		return new Promise(async (resolve) => {
+			for (let j = 0; j < repeat; j++) {
+				await playMelody(cents, length);
+			}
+			resolve();
+		}); // end of new Promise.
+	}
+
+	// Play FC Sound.
+	function playFcSound(cents=0, length=0.1, type=0) {
+		return new Promise((resolve) => {
+			let audioContext = new window.AudioContext();
+			let gainNode = audioContext.createGain();
+			gainNode.gain.value = 0.1;
+			let oscillator = audioContext.createOscillator();
+			oscillator.frequency.value = 440;
+			let inverterNode = null, delayNode = null, sourceNode = null;
+
+			// Square sound.
+			if (type == 0) { // Square
+				oscillator.type = "square";
+				oscillator.connect(gainNode);
+				gainNode.connect(audioContext.destination);
+				console.log("FC: " + cents + " x " + length);
+
+			// Pulse sound.
+			// https://tyfkda.github.io/blog/2016/11/01/square-duty.html
+			} else if (type == 1 || type == 2 || type == 3) { // 1=Pulse75% 1=Pulse25% 2=Pulse12.5% on FC.
+				let dutyCycle = type == 1 ? 0.75 : type == 2 ? 0.25 : 0.125;
+				oscillator.type = "sawtooth";
+				inverterNode = audioContext.createGain();
+  			inverterNode.gain.value = -1;
+			  delayNode = audioContext.createDelay();
+			  delayNode.delayTime.value = (1.0 - dutyCycle) / oscillator.frequency.value;
+				oscillator.connect(inverterNode);
+				inverterNode.connect(delayNode);
+				delayNode.connect(gainNode);
+				gainNode.connect(audioContext.destination);
+				console.log("FC Pulse " + dutyCycle + ": " + cents + " x " + length);
+
+			// Triangle sound.
+			} else if (type == 4) { // Triangle.
+				oscillator.type = "triangle";
+				oscillator.connect(gainNode);
+				gainNode.connect(audioContext.destination);
+				console.log("FC Triangle: " + cents + " x " + length);
+
+			// Play noise.
+			// https://ics.media/entry/200427/
+			// https://developer.mozilla.org/ja/docs/Web/API/BaseAudioContext/createBuffer
+			// https://aike.hatenablog.com/entry/20121224
+			} else if (type == 5 || type == 6) { // 5=Noise 6=ShortNoise on FC.
+				oscillator.type = "square";
+				let arrayBuffer = audioContext.createBuffer(2, audioContext.sampleRate * length, audioContext.sampleRate);
+				let reg = 0x8000, shortFreq = type > 5 ? 1 : 0;
+				for (let channel = 0; channel < arrayBuffer.numberOfChannels; channel++) {
+				  let nowBuffering = arrayBuffer.getChannelData(channel);
+				  for (let i = 0; i < arrayBuffer.length; i++) {
+				    //nowBuffering[i] = Math.random() * 2 - 1;
+				    reg >>= 1;
+				    reg |= ((reg ^ (reg >> (shortFreq ? 6 : 1))) & 1) << 15;
+				    nowBuffering[i] = reg & 1;
+				  }
+				}
+				sourceNode = audioContext.createBufferSource();
+				sourceNode.buffer = arrayBuffer;
+				sourceNode.connect(audioContext.destination);
+				console.log("FC Noise " + shortFreq + ": " + length);
+			}
+
+			let lengthAll = length;
+			if (cents.length) { // Supports both variables and arrays.
+				for (let i = 0; i < cents.length; i++) {
+					oscillator.detune.setValueAtTime(cents[i], audioContext.currentTime + length * i);
+				}
+				lengthAll = length * cents.length;
+			} else {
+				oscillator.detune.setValueAtTime(cents, audioContext.currentTime);
+			}
+
+			oscillator.onended = () => {
+				if (type == 1 || type == 2 || type == 3) {
+					gainNode.disconnect(audioContext.destination);
+					delayNode.disconnect(gainNode);
+					inverterNode.disconnect(delayNode);
+					oscillator.disconnect(inverterNode);
+				} else if (type == 5 || type == 6) {
+					sourceNode.disconnect(audioContext.destination);
+				} else {
+					gainNode.disconnect(audioContext.destination);
+					oscillator.disconnect(gainNode);
+				}
+				resolve();
+			};
+
+			if (type == 5 || type == 6) {
+				sourceNode.start();
+				sourceNode.stop(lengthAll);
+			} else {
+				oscillator.start();
+				oscillator.stop(lengthAll);
+			}
+		}); // end of new Promise.
+	}
+
+</script><!--/Common-->
+<!--Main--><script>
+document.addEventListener("click", async (evt) => { // Need user input event before play sound.
+
+	playBeep(0, 0.5);
+	await wait(1000);
+
+	playFcSound(0, 0.5, 1);
+	await wait(1000);
+
+	playFcSound(0, 0.5, 2);
+	await wait(1000);
+
+	playFcSound(0, 0.5, 3);
+	await wait(1000);
+
+	playFcSound(0, 0.5, 4);
+	await wait(1000);
+
+	playFcSound(0, 0.5, 5);
+	await wait(1000);
+
+	playFcSound(0, 0.5, 6);
+	await wait(1000);
+
+	await playMerodies([-900,-700,-500,-400,-200,0,+200,-9999], 0.2, 10);
+
+});</script><!--/Main-->
+</body>
+</html>

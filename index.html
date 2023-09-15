@@ -187,6 +187,7 @@ a {
 				console.log("Beep: " + cent + " x " + length + " + " + delay);
 				setTimeout(() => {
 					//console.log("BeepStart.");
+					this.gainNode.gain.value = 0.1;
 					this.oscillator.detune.setValueAtTime(cent, this.audioContext.currentTime);
 					if (!this.started) {
 						this.oscillator.start();
@@ -194,7 +195,7 @@ a {
 					}
 					setTimeout(() => {
 						//console.log("BeepStop.");
-						this.oscillator.detune.setValueAtTime(38400, this.audioContext.currentTime);
+						this.gainNode.gain.value = 0;
 					}, length * 1000);
 				}, delay * 1000);
 			} catch (error) {
@@ -564,18 +565,13 @@ a {
 				if (!players[playerIndex].starting) {
 					console.log("Starting main time count.");
 
-					// High beep on starting.
-					if (!players[0].starting && !players[1].starting) {
-						sound.beep(1200, 0.1);
-					}
-
 					players[playerIndex].starting = true;
 					counting = false; // Reset flag to avoid continuous beep.
 
 				// Count down on main time count.
 				} else if (players[playerIndex].count > 0) {
 					if (players[playerIndex].addition > 0) {
-						counter = players[playerIndex].current + 30; // No sound last 30 seconds.
+						counter = players[playerIndex].current + 60; // No sound for the last 60 seconds.
 					} else {
 						counter = players[playerIndex].current;
 					}
@@ -583,9 +579,9 @@ a {
 				// Count up on additional time count.
 				} else {
 					if (players[playerIndex].addition <= 0) {
-						counter = 1000*60 - players[playerIndex].current; // No sound last XX seconds.
+						counter = 1000*60 - players[playerIndex].current; // No sound for the last XX seconds.
 					} else if (players[playerIndex].addition <= 5) {
-						counter = players[playerIndex].addition - players[playerIndex].current + 5; // Change sound last 5 to 10 seconds.
+						counter = players[playerIndex].addition - players[playerIndex].current + 5; // Change sound for the last 5 to 10 seconds.
 					} else {
 						counter = players[playerIndex].addition - players[playerIndex].current;
 					}
@@ -610,16 +606,15 @@ a {
 						console.log("Beep last 10 seconds.");
 						sound.beep(0, 0.1);
 
-					// Beep every 10 seconds last 30 seconds.
+					// Beep every 10 seconds for the last 30 seconds.
 					} else if (counter < 30 && !cubeMod(counter + 1, 10)) {
-						console.log("Beep every 10 seconds last 30 seconds.");
+						console.log("Beep every 10 seconds for the last 30 seconds.");
 						sound.beep(0, 0.1);
 
-					// High 2 beeps every 30 seconds.
-					} else if (!cubeMod(counter + 1, 30)) {
-						console.log("High 2 beeps every 30 seconds.");
-						sound.beep(1200, 0.1, 0);
-						sound.beep(1200, 0.1, 0.2);
+					// Beep every 60 seconds.
+					} else if (!cubeMod(counter + 1, 60)) {
+						console.log("Beep every 60 seconds.");
+						sound.beep(0, 0.1);
 					}
 					counting = false;
 				}
@@ -912,6 +907,7 @@ a {
 
 				// Reset timeout or starting.
 				if (timeout || waiting == 1) {
+					timeout = false;
 					playing = -2;
 
 				// Pause playing.
@@ -940,7 +936,15 @@ a {
 
 					// Pause.
 					pausing = false;
+				}
+
+				// Reset waiting state.
+				if (!waiting) {
 					waiting = 2;
+
+					// High 2 beeps on pause.
+					sound.beep(1200, 0.1);
+					sound.beep(1200, 0.1, 0.2);
 				}
 
 			// Check user action on tapping.
@@ -988,6 +992,9 @@ a {
 
 					// Start.
 					waiting = 0;
+
+					// High beep on starting.
+					sound.beep(1200, 0.1);
 
 				} else {
 

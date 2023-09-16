@@ -159,8 +159,11 @@ a {
 		constructor() {
 			this.audioContext = this.oscillator = this.gainNode = null;
 			this.started = false;
+			document.addEventListener("click", (evt) => {
+				this.create();
+			});
 		}
-		beep(cent=0, length=0.1, delay=0) {
+		create() {
 			if (this.audioContext == null) {
 				try {
 					console.log("Create audio.");
@@ -182,6 +185,9 @@ a {
 					console.log(error.message);
 				}
 			}
+		}
+		beep(cent=0, length=0.1, delay=0) {
+			this.create();
 			try {
 				console.log("Beep: " + cent + " x " + length + " + " + delay);
 				setTimeout(() => {

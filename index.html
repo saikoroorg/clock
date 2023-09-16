@@ -191,6 +191,7 @@ a {
 						this.oscillator.disconnect(this.gainNode);
 						this.audioContext.close();
 						this.audioContext = this.oscillator = this.gainNode = null;
+						this.started = false;
 					};
 				} catch (error) {
 					console.log(error.message);
@@ -198,7 +199,7 @@ a {
 			}
 		}
 		beep(cent=0, length=0.1, delay=0) {
-			this.create();
+			//this.create();
 			try {
 				console.log("Beep: " + cent + " x " + length + " + " + delay);
 				setTimeout(() => {
@@ -557,6 +558,9 @@ a {
 						} else {
 							players[playerIndex].current = players[playerIndex].count = players[playerIndex].consumed = 0;
 							timeout = true;
+
+							// Long beep on timeout.
+							sound.beep(0, 4);
 						}
 					}
 
@@ -569,6 +573,9 @@ a {
 					if (players[playerIndex].addition > 0 && players[playerIndex].current >= players[playerIndex].addition) {
 						players[playerIndex].current = players[playerIndex].addition;
 						timeout = true;
+
+						// Long beep on timeout.
+						sound.beep(0, 4);
 					}
 				}
 			}

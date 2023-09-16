@@ -642,7 +642,7 @@ a {
 
 				// Show delay about 1 second for count down on main time count.
 				let r = 0;
-				if (players[j].count > 0) {
+				if (players[j].count > 0 && !(hourglass && j != playerIndex)) {
 					r = cubeMod(players[j].current + 0.999, 60); // Round up decimal to integer.
 				} else {
 					r = cubeMod(players[j].current, 60);

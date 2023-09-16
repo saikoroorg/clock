@@ -157,32 +157,31 @@ a {
 	// Sound class
 	Sound = class {
 		constructor() {
-			try {
-				this.audioContext = new window.AudioContext();
-				this.gainNode = this.audioContext.createGain();
-				this.gainNode.connect(this.audioContext.destination);
-				this.gainNode.gain.value = 0.1;
-				this.oscillator = this.audioContext.createOscillator();
-				this.oscillator.connect(this.gainNode);
-				this.oscillator.type = "square"; //"sine", "square", "sawtooth", "triangle";
-				this.oscillator.frequency.setValueAtTime(440, this.audioContext.currentTime);
-				/*
-				this.oscillator.detune.setValueAtTime(cent, this.audioContext.currentTime);
-				this.oscillator.onended = () => {
-					gainNode.disconnect(this.audioContext.destination);
-					this.oscillator.disconnect(gainNode);
-					this.audioContext.close();
-					resolve();
-				};
-				console.log("Beep: " + cent + " x " + length + " + " + delay);
-				this.oscillator.start(delay);
-				this.oscillator.stop(length + delay);*/
-				this.started = false;
-			} catch (error) {
-				console.log(error.message);
-			}
+			this.audioContext = this.oscillator = this.gainNode = null;
+			this.started = false;
 		}
 		beep(cent=0, length=0.1, delay=0) {
+			if (this.audioContext == null) {
+				try {
+					console.log("Create audio.");
+					this.audioContext = new window.AudioContext();
+					this.gainNode = this.audioContext.createGain();
+					this.gainNode.connect(this.audioContext.destination);
+					this.gainNode.gain.value = 0.1;
+					this.oscillator = this.audioContext.createOscillator();
+					this.oscillator.connect(this.gainNode);
+					this.oscillator.type = "square"; //"sine", "square", "sawtooth", "triangle";
+					this.oscillator.frequency.setValueAtTime(440, this.audioContext.currentTime);
+					this.oscillator.onended = () => {
+						this.gainNode.disconnect(this.audioContext.destination);
+						this.oscillator.disconnect(this.gainNode);
+						this.audioContext.close();
+						this.audioContext = this.oscillator = this.gainNode = null;
+					};
+				} catch (error) {
+					console.log(error.message);
+				}
+			}
 			try {
 				console.log("Beep: " + cent + " x " + length + " + " + delay);
 				setTimeout(() => {

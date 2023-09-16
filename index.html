@@ -159,14 +159,25 @@ a {
 		constructor() {
 			this.audioContext = this.oscillator = this.gainNode = null;
 			this.started = false;
+
+			// Click or tap event.
 			document.addEventListener("click", (evt) => {
+
+				// Create audio.
+				console.log("Create audio.");
 				this.create();
+
+				// Wake lock.
+				console.log("Wake lock.");
+				if (navigator.wakeLock) {
+					console.log("Request wake lock.");
+					navigator.wakeLock.request("screen");
+				}
 			});
 		}
 		create() {
 			if (this.audioContext == null) {
 				try {
-					console.log("Create audio.");
 					this.audioContext = new window.AudioContext();
 					this.gainNode = this.audioContext.createGain();
 					this.gainNode.connect(this.audioContext.destination);

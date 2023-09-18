@@ -965,9 +965,10 @@ a {
 				if (!waiting) {
 					waiting = 2;
 
-					// High 2 beeps on pause.
+					// High 3 beeps on pause.
 					sound.beep(1200, 0.1);
 					sound.beep(1200, 0.1, 0.2);
+					sound.beep(1200, 0.1, 0.4);
 				}
 
 			// Check user action on tapping.
@@ -1016,13 +1017,17 @@ a {
 					// Start.
 					waiting = 0;
 
-					// High beep on starting.
+					// High 2 beeps on starting.
 					sound.beep(1200, 0.1);
+					sound.beep(1200, 0.1, 0.2);
 
 				} else {
 
 					// Switch players.
 					playerIndex = cubeMod(playerIndex + 1, playerCount > 2 ? playerCount : 2);
+
+					// High beep on switching.
+					sound.beep(1200, 0.1);
 				}
 
 				pausing = false;

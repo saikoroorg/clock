@@ -16,7 +16,9 @@ Worker = class {
 				console.log("Get cached file: " + url + " from " + cacheKey);
 				self.caches.open(cacheKey).then((cache) => {
 					cache.match(url, {ignoreSearch: true}).then((res) => {
-						console.log("Found cached file: " + url + " -> " + res.statusText);
+
+						// Resolves by cached response.
+						console.log("Resolves by cached response: " + url + " -> " + res.statusText);
 						resolve(res);
 					}).catch((error) => {
 
@@ -24,8 +26,8 @@ Worker = class {
 						console.log("Not found cached file: " + url);
 						this.fetchAndCache(url, cacheKey).then((res) => {
 
-							// Returns fetched response.
-							console.log("Returns fetched response. -> " + res.statusText);
+							// Resolves by fetched response.
+							console.log("Resolves by fetched response: " + url + " -> " + res.statusText);
 							resolve(res);
 						});
 					})
@@ -40,7 +42,9 @@ Worker = class {
 				// No cache.
 				console.log("No cache: " + url);
 				fetch(url).then((res) => {
-					console.log("Fetched file: " + url + " -> " + res.statusText);
+
+					// Resolves by fetched response.
+					console.log("Resolves by fetched response: " + url + " -> " + res.statusText);
 					resolve(res);
 
 				// Failed to fetch file.
@@ -51,27 +55,8 @@ Worker = class {
 		}); // end of new Promise.
 	}
 
-	// Delete old cache files when the cache version updated.
-	deleteOldCache(cacheKey) {
-		if (cacheKey) {
-			console.log("Delete all cache files: " + cacheKey);
-			return self.caches.keys().then((keys) => {
-				return Promise.all(keys.map((key) => {
-					if (key != cacheKey && key != "*") {
-						console.log("Delete old cache: " + key);
-						return self.caches.delete(key);
-					}
-				})); // end of Promise.all.
-			});
-
-		} else {
-			console.log("No cache.");
-		}
-	}
-
 	// Fetch and cache.
 	fetchAndCache(url, cacheKey) {
-		console.log("Fetch and cache: " + url);
 		return fetch(url).then((res) => {
 			if (res.ok) {
 
@@ -128,7 +113,7 @@ Worker = class {
 							}
 
 							// Resolves by replaced response.
-							console.log("Resolves by replaced response. -> " + res.statusText);
+							console.log("Resolves by replaced response: " + url + " -> " + res.statusText);
 							resolve(res.clone());
 
 						// File is not text.
@@ -140,7 +125,7 @@ Worker = class {
 
 			// File not found.
 			} else {
-				console.log("File not found: " + url + " -> " + res.statusText);
+				console.log("Returns error: File not found: " + url + " -> " + res.statusText);
 				return res;
 			}
 
@@ -150,126 +135,202 @@ Worker = class {
 		});
 	}
 
-	// Get manifest file from cache or fetch to start.
-	startCache() {
-		console.log("Start worker.");
+	// Prefetch all content files to renew.
+	renew() {
 		return new Promise((resolve) => {
+			console.log("Renew worker.");
 
-			// Get cache or fetch manifest file.
-			console.log("Get cache or fetch: " + this.manifest);
-			this.cacheOrFetch(this.manifest, "*").then((res) => {
-				if (res.ok) {
-					let contentType = res.headers.get("Content-Type");
-					if (contentType.match("application/json")) {
-						res.json().then((manifest) => {
-							console.log("Found manifest: " + JSON.stringify(manifest));
-
-							// Set version and cache key.
-							this.cacheKey = manifest.name + "/" + manifest.version;
-							console.log("Set version: " + this.cacheKey);
-
-							// Set replacing table.
-							this.replacing = {};
-							if (manifest.version) {
-								this.replacing.version = "#" + manifest.version.substr(-4);
-							}
-							if (manifest.author && manifest.name) {
-								this.replacing.author = manifest.author + "/" + manifest.name;
-							}
-							if (manifest.short_name) {
-								this.replacing.title = manifest.short_name;
-							}
-							console.log("Replacing table: " + JSON.stringify(this.replacing));
-
-							// Returns fetched response.
-							console.log("Returns manifest. -> " + res.statusText);
-							resolve(manifest);
-
-						// File is not json.
-						}).catch((error) => {
-							console.log(error.message);
-						});
-
-					// Manifest file is not json.
-					} else {
-						console.log("File is not json: " + url + " -> " + res.statusText);
-					}
-
-				// Manifest file not found.
-				} else {
+			// Fetch new manifest file.
+			let url = this.manifest;
+			console.log("Fetch new manifest: " + url);
+			return fetch(url, {cache: "no-store"}).then((res) => {
+				if (!res.ok) {
 					console.log("File not found: " + url + " -> " + res.statusText);
+					resolve(res.clone());
+					return;
+				}
+				let contentType = res.headers.get("Content-Type");
+				if (!contentType.match("application/json")) {
+					console.log("File is not json: " + url + " -> " + res.statusText);
+					resolve(res.clone());
+					return;
 				}
 
-			// Failed to catch or fetch manifest file.
+				// Parse manifest json.
+				res.clone().json().then((manifest) => {
+					console.log("Fetched new manifest: " + JSON.stringify(manifest));
+					let cacheKey = manifest.name + "/" + manifest.version;
+
+					// Not found new version.
+					if (cacheKey == this.cacheKey) {
+						console.log("Not found new version: " + cacheKey);
+						resolve(res.clone());
+
+					// Found new version.
+					} else {
+						console.log("Found new version: " + cacheKey + " old: " + this.cacheKey);
+
+						// Prefetch all content files.
+						console.log("Prefetch all content files.");
+						Promise.all(manifest.contents.map((content) => {
+							return this.fetchAndCache(content, cacheKey);
+						})).then(() => {
+
+							// Cache new manifest.
+							console.log("Cache new manifest: " + url + " to * -> " + res.statusText);
+							self.caches.open("*").then((cache) => {
+								cache.put(url, res.clone());
+							});
+
+							// Returns fetched response.
+							console.log("Resolves by fetched response: " + url + " -> " + res.statusText);
+							resolve(res.clone());
+						});
+					}
+
+				});
 			}).catch((error) => {
 				console.log(error.message);
 			});
 		}); // end of new Promise.
 	}
 
-	// Prefetch all content files to renew.
-	renewCache() {
-		console.log("Renew worker.");
+	// Get manifest file from cache to start worker.
+	start() {
+		if (this.cacheKey) {
+			console.log("Worker already installed.");
+			return Promise.resolve();
+		}
 		return new Promise((resolve) => {
+			console.log("Start worker.");
 
-			// Fetch new manifest file.
-			let url = this.manifest;
-			console.log("Fetch new manifest: " + url);
-			return fetch(url, {cache: "no-store"}).then((res) => {
-				if (res.ok) {
+			// Get cached manifest file.
+			let url = this.manifest, cacheKey = "*";
+			console.log("Get cached manifest file: " + url + " from " + cacheKey);
+			self.caches.open(cacheKey).then((cache) => {
+				cache.match(url, {ignoreSearch: true}).then((res) => {
+					if (!res.ok) {
+						console.log("File not found: " + url + " -> " + res.statusText);
+						return;
+					}
 					let contentType = res.headers.get("Content-Type");
-					if (contentType.match("application/json")) {
-						res.clone().json().then((manifest) => {
-							console.log("Fetched new manifest: " + JSON.stringify(manifest));
-							let cacheKey = manifest.name + "/" + manifest.version;
-
-							// Found new version.
-							if (cacheKey != this.cacheKey) {
-								console.log("Found new version: " + cacheKey + " old: " + this.cacheKey);
-
-								// Fetch all content files.
-								console.log("Fetch all content files.");
-								Promise.all(manifest.contents.map((content) => {
-									return this.fetchAndCache(content, cacheKey);
-								})).then(() => {
-
-									// Cache new manifest.
-									console.log("Cache new manifest: " + url + " to * -> " + res.statusText);
-									self.caches.open("*").then((cache) => {
-										cache.put(url, res.clone());
-									});
-
-									// Returns fetched response.
-									console.log("Returns fetched response. -> " + res.statusText);
-									resolve(res.clone());
-								});
-
-							} else {
-								console.log("Not found new version: " + cacheKey + " old: " + this.cacheKey);
-							}
-
-						// Failed to parse json.
-						}).catch((error) => {
-							console.log(error.message);
-						});
-
-					// New manifest file is not json.
-					} else {
+					if (!contentType.match("application/json")) {
 						console.log("File is not json: " + url + " -> " + res.statusText);
+						return;
 					}
 
-				// New manifest file not found.
-				} else {
-					console.log("File not found: " + url + " -> " + res.statusText);
-				}
+					// Parse manifest json.
+					res.json().then((manifest) => {
+						console.log("Found manifest: " + JSON.stringify(manifest));
 
-			// Failed to fetch new manifest file.
+						// Set version and cache key.
+						this.cacheKey = manifest.name + "/" + manifest.version;
+						console.log("Set version: " + this.cacheKey);
+
+						// Set replacing table.
+						this.replacing = {};
+						if (manifest.version) {
+							if (manifest.name) {
+								this.replacing.version = manifest.name + "#" + manifest.version.substr(-4);
+							} else {
+								this.replacing.version = "#" + manifest.version.substr(-4);
+							}
+						}
+						if (manifest.author) {
+							this.replacing.author = manifest.author;
+						}
+						if (manifest.short_name) {
+							this.replacing.title = manifest.short_name;
+						}
+						console.log("Created replacing table: " + JSON.stringify(this.replacing));
+
+						// Resolves.
+						console.log("Resolves: Install worker completed.");
+						resolve();
+					});
+				});
+			}).catch((error) => {
+				console.log(error.message);
+			});
+		}); // end of new Promise.
+	}
+	
+	// Get manifest file from cache or fetch on installing worker.
+	install() {
+		return new Promise((resolve) => {
+
+			// Read manifest file to use cache.
+			this.start().then((res) => {
+				resolve(res);
+			}).catch((error) => {
+				console.log("Install worker.");
+
+				// Refetch manifest file.
+				let url = this.manifest, cacheKey = "*";
+				console.log("Refetch manifest file: " + url);
+				return this.fetchAndCache(content, cacheKey).then((res) => {
+					resolve(this.start());
+				});
+			}).catch((error) => {
+				console.log(error.message);
+			});
+		}); // end of new Promise.
+	}
+
+	// Delete old cache files when the cache version updated on activating worker.
+	activate() {
+		return new Promise((resolve) => {
+
+			// Read manifest file to use cache.
+			this.start().then(() => {
+
+				// Delete all cache files.
+				console.log("Delete all cache files: " + this.cacheKey);
+				self.caches.keys().then((keys) => {
+					Promise.all(keys.map((key) => {
+						if (key != this.cacheKey && key != "*") {
+							console.log("Delete old cache: " + key);
+							return self.caches.delete(key);
+						}
+					})).then(() => { // end of Promise.all.
+
+						// Resolves.
+						console.log("Resolves: Delete all cache files completed.");
+						resolve();
+					});
+				});
+			}).catch((error) => {
+				console.log(error.message);
+			});
+		}); // end of new Promise.
+	}
+
+	// Get cache or fetch files called by app.
+	fetch(url) {
+		return new Promise((resolve) => {
+
+			// Read manifest file to use cache.
+			this.start().then(() => {
+
+				// Get cache or fetch and return response.
+				console.log("Get cache or fetch");
+				this.cacheOrFetch(url, this.cacheKey).then((res) => {
+
+					// Resolves.
+					console.log("Resolves: Fetch by worker completed: " + url + " -> " + res.statusText);
+					resolve(res);
+
+					// Prefetch all content files on background for next install.
+					this.renew();
+				});
 			}).catch((error) => {
 				console.log(error.message);
 			});
 		}); // end of new Promise.
 	}
 };
+
+// Create worker.
 var worker = new Worker();
 
 // Script for client to register worker.
@@ -286,14 +347,6 @@ if (!self || !self.registration) {
 			}
 		}
 
-		// Wake lock.
-		window.addEventListener('click', async () => {
-			if (navigator.wakeLock) {
-				console.log("Request wake lock.");
-				await navigator.wakeLock.request("screen");
-			}
-		});
-
 	} catch (error) {
 		console.error(error.name, error.message);
 	}
@@ -304,33 +357,28 @@ if (!self || !self.registration) {
 	// Event on installing worker.
 	self.addEventListener("install", (evt) => {
 		console.log("Install worker: " + worker.background);
-
-		// Read manifest file to start cache.
-		evt.waitUntil(worker.startCache());
-
-		// Prefetch all content files for next install.
-		worker.renewCache();
-
-		console.log("Installed worker.");
+		evt.waitUntil(worker.install().then(() => {
+			console.log("Installed worker.");
+		}));
+		console.log("Installing worker.");
 	});
 
 	// Event on activating worker.
 	self.addEventListener("activate", (evt) => {
 		console.log("Activate worker: " + worker.background);
-
-		// Delete old cache files when the cache version updated.
-		evt.waitUntil(worker.deleteOldCache(worker.cacheKey));
-
-		console.log("Activated worker.");
+		evt.waitUntil(worker.activate().then(() => {
+			console.log("Activated worker.");
+		}));
+		console.log("Activating worker.");
 	});
 
 	// Event on fetching network request.
 	self.addEventListener("fetch", (evt) => {
 		console.log("Fetch by worker: " + evt.request.url);
-
-		// Get cache or fetch and return response.
-		evt.respondWith(worker.cacheOrFetch(evt.request.url, worker.cacheKey));
-
-		console.log("Fetched by worker.");
+		evt.respondWith(worker.fetch(evt.request.url).then((res) => {
+			console.log("Fetched by worker.");
+			return res;
+		}));
+		console.log("Fetching by worker.");
 	});
 }

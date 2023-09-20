@@ -146,81 +146,14 @@ a {
 		<div class="screen" id="screen2"></div>
 	</div>
 	<h6 id="footer">
-		<div class="author"></div>
-		<div class="version">.</div>
+		<div class="author"></div>/
+		<div class="version"></div>
 	</h6>
 </div>
 <!--script>console.log = () => {};</script!-->
 <script src="background.js"></script>
 <script src="cube-api-0.8.js"></script>
-<!--Common--><script>
-	// Sound class
-	Sound = class {
-		constructor() {
-			this.audioContext = this.oscillator = this.gainNode = null;
-			this.started = false;
-
-			// Click or tap event.
-			document.addEventListener("click", (evt) => {
-
-				// Create audio.
-				console.log("Create audio.");
-				this.create();
-
-				// Wake lock.
-				console.log("Wake lock.");
-				if (navigator.wakeLock) {
-					console.log("Request wake lock.");
-					navigator.wakeLock.request("screen");
-				}
-			});
-		}
-		create() {
-			if (this.audioContext == null) {
-				try {
-					this.audioContext = new window.AudioContext();
-					this.gainNode = this.audioContext.createGain();
-					this.gainNode.connect(this.audioContext.destination);
-					this.gainNode.gain.value = 0.1;
-					this.oscillator = this.audioContext.createOscillator();
-					this.oscillator.connect(this.gainNode);
-					this.oscillator.type = "square"; //"sine", "square", "sawtooth", "triangle";
-					this.oscillator.frequency.setValueAtTime(440, this.audioContext.currentTime);
-					this.oscillator.onended = () => {
-						this.gainNode.disconnect(this.audioContext.destination);
-						this.oscillator.disconnect(this.gainNode);
-						this.audioContext.close();
-						this.audioContext = this.oscillator = this.gainNode = null;
-						this.started = false;
-					};
-				} catch (error) {
-					console.log(error.message);
-				}
-			}
-		}
-		beep(cent=0, length=0.1, delay=0) {
-			this.create();
-			try {
-				console.log("Beep: " + cent + " x " + length + " + " + delay);
-				setTimeout(() => {
-					//console.log("BeepStart.");
-					this.gainNode.gain.value = 0.1;
-					this.oscillator.detune.setValueAtTime(cent, this.audioContext.currentTime);
-					if (!this.started) {
-						this.oscillator.start();
-						this.started = true;
-					}
-					setTimeout(() => {
-						//console.log("BeepStop.");
-						this.gainNode.gain.value = 0;
-					}, length * 1000);
-				}, delay * 1000);
-			} catch (error) {
-				console.log(error.message);
-			}
-		}
-	};
-</script><!--/Common-->
+<script src="sound.js"></script>
 <!--Menu--><script>
 	var player = 2; // Player count.
 	var count = 0; // Time count.
@@ -287,6 +220,13 @@ a {
 			} else {
 				setClock(0, addition, bonus, player);
 			}
+
+			// High beep on press button.
+			picoBeep(1200, 0.1);
+		} else {
+
+			// Low beep on press locked button.
+			picoBeep(-1200, 0.1);
 		}
 	};
 
@@ -306,6 +246,13 @@ a {
 			} else {
 				setClock(count, 0, 0, player);
 			}
+
+			// High beep on press button.
+			picoBeep(1200, 0.1);
+		} else {
+
+			// Low beep on press locked button.
+			picoBeep(-1200, 0.1);
 		}
 	};
 
@@ -317,6 +264,13 @@ a {
 			} else {
 				setClock(count, addition, bonus, 2);
 			}
+
+			// High beep on press button.
+			picoBeep(1200, 0.1);
+		} else {
+
+			// Low beep on press locked button.
+			picoBeep(-1200, 0.1);
 		}
 	};
 
@@ -416,9 +370,6 @@ a {
 			clocks[k].numbers[j] = await cubeSprite("image.svg", numberWidth, numberWidth);
 		}
 	}
-
-	// Sound.
-	var sound = new Sound();
 
 	// Playing states.
 	//var playing = 0; // Playing count.
@@ -560,7 +511,7 @@ a {
 							timeout = true;
 
 							// Long beep on timeout.
-							sound.beep(0, 4);
+							picoBeep(0, 4);
 						}
 					}
 
@@ -575,7 +526,7 @@ a {
 						timeout = true;
 
 						// Long beep on timeout.
-						sound.beep(0, 4);
+						picoBeep(0, 4);
 					}
 				}
 			}
@@ -584,11 +535,11 @@ a {
 			let counter = -1;
 			if (!waiting && !pausing && !timeout && playerIndex >= 0) {
 
-				// Starting main time count.
-				if (!players[playerIndex].starting) {
-					console.log("Starting main time count.");
+				// Starting count.
+				if (players[playerIndex].starting) {
+					console.log("Starting count.");
 
-					players[playerIndex].starting = true;
+					players[playerIndex].starting = false;
 					counting = false; // Reset flag to avoid continuous beep.
 
 				// Count down on main time count.
@@ -622,22 +573,22 @@ a {
 					// Long beep last 5 seconds.
 					if (counter < 5) {
 						console.log("Long beep last 5 seconds.");
-						sound.beep(0, 0.5);
+						picoBeep(0, 0.5);
 
 					// Beep last 10 seconds.
 					} else if (counter < 10) {
 						console.log("Beep last 10 seconds.");
-						sound.beep(0, 0.1);
+						picoBeep(0, 0.1);
 
 					// Beep every 10 seconds for the last 30 seconds.
 					} else if (counter < 30 && !cubeMod(counter + 1, 10)) {
 						console.log("Beep every 10 seconds for the last 30 seconds.");
-						sound.beep(0, 0.1);
+						picoBeep(0, 0.1);
 
 					// Beep every 60 seconds.
 					} else if (!cubeMod(counter + 1, 60)) {
 						console.log("Beep every 60 seconds.");
-						sound.beep(0, 0.1);
+						picoBeep(0, 0.1);
 					}
 					counting = false;
 				}
@@ -650,7 +601,7 @@ a {
 				// Show delay about 1 second for count down on main time count.
 				let r = 0;
 				if (players[j].count > 0 && !(hourglass && j != playerIndex)) {
-					r = cubeMod(players[j].current + 0.999, 60); // Round up decimal to integer.
+					r = cubeMod(cubeCut(players[j].current, true), 60); // Round up decimal to integer.
 				} else {
 					r = cubeMod(players[j].current, 60);
 				}
@@ -672,7 +623,7 @@ a {
 
 				// Show delay about 1 second for count down on main time count.
 				if (players[j].count > 0) {
-					r = cubeDiv(players[j].current + 0.999, 60); // Round up decimal to integer.
+					r = cubeDiv(cubeCut(players[j].current, true), 60); // Round up decimal to integer.
 				} else {
 					r = cubeDiv(players[j].current, 60);
 				}
@@ -966,9 +917,9 @@ a {
 					waiting = 2;
 
 					// High 3 beeps on pause.
-					sound.beep(1200, 0.1);
-					sound.beep(1200, 0.1, 0.2);
-					sound.beep(1200, 0.1, 0.4);
+					picoBeep(1200, 0.1);
+					picoBeep(1200, 0.1, 0.2);
+					picoBeep(1200, 0.1, 0.4);
 				}
 
 			// Check user action on tapping.
@@ -1016,18 +967,20 @@ a {
 
 					// Start.
 					waiting = 0;
+					players[playerIndex].starting = true;
 
 					// High 2 beeps on starting.
-					sound.beep(1200, 0.1);
-					sound.beep(1200, 0.1, 0.2);
+					picoBeep(1200, 0.1);
+					picoBeep(1200, 0.1, 0.2);
 
 				} else {
 
 					// Switch players.
 					playerIndex = cubeMod(playerIndex + 1, playerCount > 2 ? playerCount : 2);
+					players[playerIndex].starting = true;
 
 					// High beep on switching.
-					sound.beep(1200, 0.1);
+					picoBeep(1200, 0.1);
 				}
 
 				pausing = false;

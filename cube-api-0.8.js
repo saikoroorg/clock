@@ -5,14 +5,15 @@
 var cube = cube || {};
 
 /* VERSION/ *****************************/
-cube.version = "0.8.68";
-cube.timestamp = "30908";
+cube.version = "0.8.69";
+cube.timestamp = "30919";
 // 20606 : sprite member name changes: screen from sprite. parent from screen.
 // 20607 : use classList.contains instead of contains on sprite.enable method.
 // 20608 : fix bug: classList.contains -> contains on enable method.
 // 30827 : fix bug: screens.push(this.screen) -> screens.push(screens[i]).
 // 30904 : enable screen method splits to draw and enable method and fix resize method.
 // 30908 : set motion.z on pressed/swiped. fix touch bug.
+// 30919 : add round up flag on cut method.
 /************************************* /VERSION*
 
 
@@ -54,9 +55,15 @@ function cubeVector(x, y, z=0) {
 	return new cube.Vec(x, y, z);
 }
 
-// Cut decimal to integer.
-function cubeCut(x) {
-	return x >= 0 ? Math.floor(x) : Math.ceil(x);
+// Cut decimals to integers.
+// up=true: Round up on positive number, round down on negative number.
+// up=false: Round down on positive number, round up on negative number.
+function cubeCut(x, up=false) {
+	if (up) {
+		return x >= 0 ? Math.ceil(x) : Math.floor(x);
+	} else {
+		return x >= 0 ? Math.floor(x) : Math.ceil(x);
+	}
 }
 
 // Calculate the division.

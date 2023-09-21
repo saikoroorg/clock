@@ -12,20 +12,21 @@ async function picoBeep(cent=0, length=0.1, delay=0) {
 
 // Play melody.
 async function picoPlay(cents=[0], length=0.1, repeat=-1) {
-	await pico.sound.play(cents, length, repeat);
+	await pico.melody.play(cents, length, repeat);
 }
 
 // Force stop melody.
 async function picoStop() {
-	await pico.sound.stop();
+	await pico.melody.stop();
 }
 
 // Play FC sound.
-async function picoPlayFc(cent=0, length=0.1, type=0) {
-	await pico.sound.playFc(cent, length, type);
+async function picoFcBeep(cent=0, length=0.1, type=0) {
+	await pico.fcSound.fcBeep(cent, length, type);
 }
 
 //************************************************************/
+
 // Namespace.
 var pico = pico || {};
 
@@ -79,16 +80,6 @@ pico.Sound = class {
 					this.repeat = 0;
 				};
 			}
-
-			// Wake lock.
-			// Not work on iOS 16 PWA.
-			// https://bugs.webkit.org/show_bug.cgi?id=254545
-			if (navigator.wakeLock) {
-				console.log("Request wake lock.");
-				navigator.wakeLock.request("screen");
-			} else {
-				console.log("No wake lock.");
-			}
 		} catch (error) {
 			console.log(error.message);
 		}
@@ -96,7 +87,6 @@ pico.Sound = class {
 
 	// Wait sound.
 	async wait(t=1000) {
-		//this._setup();
 		try {
 			await new Promise(r => setTimeout(r, t));
 		} catch (error) {
@@ -108,7 +98,6 @@ pico.Sound = class {
 	async beep(cent=0, length=0.1, delay=0) {
 		const volume = 0.1;
 		const type = "square"; //"sine", "square", "sawtooth", "triangle";
-		//this._setup();
 		try {
 
 			// Start audio.
@@ -148,12 +137,15 @@ pico.Sound = class {
 			console.log(error.message);
 		}
 	}
+};
+
+// Melody class
+pico.Melody = class extends pico.Sound {
 
 	// Play melody.
 	async play(cents=[0], length=0.1, repeat=-1) {
 		const volume = 0.1;
 		const type = "triangle"; //"sine", "square", "sawtooth", "triangle";
-		//this._setup();
 		try {
 
 			// Start audio.
@@ -220,7 +212,6 @@ pico.Sound = class {
 
 	// Force stop melody.
 	async stop() {
-		//this._setup();
 		try {
 
 			// Stop audio.
@@ -248,10 +239,15 @@ pico.Sound = class {
 		}
 	}
 
-	// Play FC sound.
-	async playFc(cent=0, length=0.1, tone=0) {
+};
+
+
+// FC Sound class
+pico.FcSound = class extends pico.Sound {
+
+	// Play FC beep.
+	async fcBeep(cent=0, length=0.1, tone=0) {
 		const volume = 0.1;
-		//this._setup();
 		try {
 
 			// Start audio.
@@ -282,9 +278,9 @@ pico.Sound = class {
 						// Create pulse filters.
 						let pulseFilters = [];
 						pulseFilters[0] = this.audio.createGain();
-		  			pulseFilters[0].gain.value = -1;
+						pulseFilters[0].gain.value = -1;
 						pulseFilters[tone] = this.audio.createDelay();
-					  pulseFilters[tone].delayTime.value = (1.0 - dutyCycles[tone]) / this.oscillator.frequency.value;
+						pulseFilters[tone].delayTime.value = (1.0 - dutyCycles[tone]) / this.oscillator.frequency.value;
 
 						// Connect pulse filters to master volume.
 						this.oscillator.type = "sawtooth";
@@ -328,13 +324,13 @@ pico.Sound = class {
 						noiseBuffers[tone-5] = this.audio.createBuffer(2, this.audio.sampleRate * length, this.audio.sampleRate);
 						let reg = 0x8000;
 						for (let j = 0; j < noiseBuffers[tone-5].numberOfChannels; j++) {
-						  let buffering = noiseBuffers[tone-5].getChannelData(j);
-						  for (let i = 0; i < noiseBuffers[tone-5].length; i++) {
-						    //buffering[i] = Math.random() * 2 - 1;
-						    reg >>= 1;
-						    reg |= ((reg ^ (reg >> freqs[tone-5])) & 1) << 15;
-						    buffering[i] = reg & 1;
-						  }
+							let buffering = noiseBuffers[tone-5].getChannelData(j);
+							for (let i = 0; i < noiseBuffers[tone-5].length; i++) {
+								//buffering[i] = Math.random() * 2 - 1;
+								reg >>= 1;
+								reg |= ((reg ^ (reg >> freqs[tone-5])) & 1) << 15;
+								buffering[i] = reg & 1;
+							}
 						}
 
 						// Connect noise generators to master volume.
@@ -383,3 +379,5 @@ pico.Sound = class {
 
 // Master sound.
 pico.sound = new pico.Sound();
+pico.melody = new pico.Melody();
+pico.fcSound = new pico.FcSound();

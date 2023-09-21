@@ -340,6 +340,17 @@ if (!self || !self.registration) {
 				})();
 			}
 		}
+
+		// Wake lock.
+		// Not work on iOS 16 PWA.
+		// https://bugs.webkit.org/show_bug.cgi?id=254545
+		if (navigator.wakeLock) {
+			console.log("Request wake lock.");
+			navigator.wakeLock.request("screen");
+		} else {
+			console.log("No wake lock.");
+		}
+
 	} catch (error) {
 		console.error(error.name, error.message);
 	}

@@ -11,11 +11,11 @@ async function picoBeep(cent=0, length=0.1, delay=0) {
 }
 
 // Play melody.
-async function picoPlay(cents=[0], length=0.1, repeat=0) {
+async function picoPlay(cents=[0], length=0.1, repeat=-1) {
 	await pico.sound.play(cents, length, repeat);
 }
 
-// Stop melody.
+// Force stop melody.
 async function picoStop() {
 	await pico.sound.stop();
 }
@@ -40,23 +40,22 @@ pico.Sound = class {
 		this.started = false; // Start flag.
 		this.endTime = 0; // End time count.
 		this.repeat = 0; // Repeat count.
-		this.shutdown = false; // Shutdown flag.
 
 		// Setup after click event for audio permission.
 		document.addEventListener("click", () => {
-			this.setup();
+			this._setup();
 		});
 
 		// Setup after visibility changed to visible.
 		document.addEventListener("visibilitychange", () => {
 			if (document.visibilityState === "visible") {
-				this.setup();
+				this._setup();
 			}
 		});
 	}
 
 	// Setup sound.
-	setup() {
+	_setup() {
 		try {
 
 			// Create audio.
@@ -78,7 +77,6 @@ pico.Sound = class {
 					this.started = false;
 					this.endTime = 0;
 					this.repeat = 0;
-					this.shutdown = false;
 				};
 			}
 
@@ -98,7 +96,7 @@ pico.Sound = class {
 
 	// Wait sound.
 	async wait(t=1000) {
-		//this.setup();
+		//this._setup();
 		try {
 			await new Promise(r => setTimeout(r, t));
 		} catch (error) {
@@ -110,7 +108,7 @@ pico.Sound = class {
 	async beep(cent=0, length=0.1, delay=0) {
 		const volume = 0.1;
 		const type = "square"; //"sine", "square", "sawtooth", "triangle";
-		//this.setup();
+		//this._setup();
 		try {
 
 			// Start audio.
@@ -139,7 +137,6 @@ pico.Sound = class {
 							this.master.gain.value = 0;
 							this.endTime = 0;
 							this.repeat = 0;
-							this.shutdown = false;
 							resolve();
 						}, length * 1000);
 					}, delay * 1000);
@@ -153,15 +150,15 @@ pico.Sound = class {
 	}
 
 	// Play melody.
-	async play(cents=[0], length=0.1, repeat=0) {
+	async play(cents=[0], length=0.1, repeat=-1) {
 		const volume = 0.1;
 		const type = "triangle"; //"sine", "square", "sawtooth", "triangle";
-		//this.setup();
+		//this._setup();
 		try {
 
 			// Start audio.
 			if (this.audio) {
-				this.repeat = repeat ? repeat : -1;
+				this.repeat = repeat;
 				await new Promise(async (resolve) => {
 					while (this.repeat) {
 						console.log("Play melody " + this.repeat + ": " + cents + " x " + length * cents.length);
@@ -185,28 +182,31 @@ pico.Sound = class {
 							// End time.
 							this.endTime = Date.now() + length * cents.length * 1000;
 							let timer = setInterval(() => {
-								if (this.shutdown) {
-									console.log("Stop melody " + this.repeat + "." + (Date.now()-this.endTime));
+								if (this.repeat == 0) {
+									console.log("Force stop melody " + this.repeat + "." + (Date.now()-this.endTime));
 									this.master.gain.value = 0;
 									this.endTime = 0;
 									this.repeat = 0;
-									this.shutdown = false;
 									clearInterval(timer);
+
+									// Resolves.
 									resolve();
 								} else if (Date.now() >= this.endTime) {
 									console.log("End melody " + this.repeat + "." + (Date.now()-this.endTime));
 									this.master.gain.value = 0;
 									this.endTime = 0;
 									this.repeat -= 1;
-									this.shutdown = false;
 									clearInterval(timer);
+
+									// Resolves.
 									resolve();
 								} else {
-									console.log("Continue melody " + this.repeat + "." + (Date.now()-this.endTime));
+									console.log("Playing melody " + this.repeat + "." + (Date.now()-this.endTime));
 								}
 							}, length * 1000);
 						}); // end of new Promise.
 					}
+					this.repeat = 0;
 					console.log("End all melodies.");
 					resolve();
 				}); // end of new Promise.
@@ -218,22 +218,22 @@ pico.Sound = class {
 		}
 	}
 
-	// Stop melody.
+	// Force stop melody.
 	async stop() {
-		//this.setup();
+		//this._setup();
 		try {
 
 			// Stop audio.
 			if (this.audio) {
-				console.log("Stop melody.");
+				console.log("Force stop melody.");
 				if (this.repeat) {
 					await new Promise(async (resolve) => {
-						this.shutdown = true; // Shutdown all melodies.
+						this.repeat = 0; // Force stop all melodies.
+
+						// Wait to stop all melodies.
 						let timer = setInterval(() => {
-							if (!this.repeat) {
-								console.log("Stoped melody.");
-								this.master.gain.value = 0;
-								this.endTime = 0;
+							if (!this.endTime) {
+								console.log("Force stoped all melodies.");
 								clearInterval(timer);
 								resolve();
 							}
@@ -251,7 +251,7 @@ pico.Sound = class {
 	// Play FC sound.
 	async playFc(cent=0, length=0.1, tone=0) {
 		const volume = 0.1;
-		//this.setup();
+		//this._setup();
 		try {
 
 			// Start audio.
@@ -369,7 +369,6 @@ pico.Sound = class {
 							this.master.gain.value = 0;
 							this.endTime = 0;
 							this.repeat = 0;
-							this.shutdown = false;
 						}
 						resolve();
 					}, length * 1000);

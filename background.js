@@ -8,220 +8,200 @@ Worker = class {
 	}
 
 	// Get file from cache or fetch.
-	cacheOrFetch(url, cacheKey) {
-		return new Promise((resolve) => {
+	_cacheOrFetch(url, cacheKey=null) {
+		return new Promise((resolve, reject) => {
 			if (cacheKey) {
 
 				// Get cached file.
 				console.log("Get cached file: " + url + " from " + cacheKey);
 				self.caches.open(cacheKey).then((cache) => {
-					cache.match(url, {ignoreSearch: true}).then((res) => {
+					cache.match(url, {ignoreSearch: true}).then((result) => {
 
 						// Resolves by cached response.
-						console.log("Resolves by cached response: " + url + " -> " + res.statusText);
-						resolve(res);
+						console.log("Resolves by cached response: " + url + " -> " + result.statusText);
+						resolve(result);
 					}).catch((error) => {
 
 						// Not found cached file.
 						console.log("Not found cached file: " + url);
-						this.fetchAndCache(url, cacheKey).then((res) => {
+						this._fetchAndCache(url, cacheKey).then((result) => {
 
 							// Resolves by fetched response.
-							console.log("Resolves by fetched response: " + url + " -> " + res.statusText);
-							resolve(res);
+							console.log("Resolves by fetched response: " + url + " -> " + result.statusText);
+							resolve(result);
 						});
-					})
-
-				// Failed to open cache.
-				}).catch((error) => {
-					console.log(error.message);
+					});
 				});
 
 			} else {
 
 				// No cache.
 				console.log("No cache: " + url);
-				fetch(url).then((res) => {
+				fetch(url).then((result) => {
 
 					// Resolves by fetched response.
-					console.log("Resolves by fetched response: " + url + " -> " + res.statusText);
-					resolve(res);
-
-				// Failed to fetch file.
-				}).catch((error) => {
-					console.log(error.message);
+					console.log("Resolves by fetched response: " + url + " -> " + result.statusText);
+					resolve(result);
 				});
 			}
 		}); // end of new Promise.
 	}
 
 	// Fetch and cache.
-	fetchAndCache(url, cacheKey) {
-		return fetch(url).then((res) => {
-			if (res.ok) {
+	_fetchAndCache(url, cacheKey) {
+		return fetch(url).then((result) => {
 
-				// Cache the fetched file.
-				console.log("Fetched file: " + url + " -> " + res.statusText);
-				let contentType = res.headers.get("Content-Type");
-				if (!contentType.match("text/html")) {
-
-					if (cacheKey) {
-						console.log("Cache the fetched file: " + url + " to " + cacheKey + " -> " + res.statusText);
-						self.caches.open(cacheKey).then((cache) => {
-							cache.put(url, res.clone());
-
-						// Failed to open cache.
-						}).catch((error) => {
-							console.log(error.message);
-						});
-					}
-
-					// Returns fetched response.
-					console.log("Returns fetched response. -> " + res.statusText);
-					return res.clone();
-
-				// Replace fetched html file.
-				} else {
-					return new Promise((resolve) => {
-						res.text().then((text) => {
-							console.log("Fetched html file: " + text.replace(/\s+/g, " ").substr(-1000));
-
-							// Replace strings by manifest.
-							for (let key in this.replacing) {
-								console.log("Replacing: " + key + " -> " + this.replacing[key]);
-								let reg = new RegExp("(<.*class=\"" + key + "\".*>).*(<\/.*>)");
-								text = text.replace(reg, "$1" + this.replacing[key] + "$2");
-							}
-							console.log("Replaced file: " + text.replace(/\s+/g, " ").substr(-1000));
-
-							// Replaced responce.
-							let options = {status: res.status,
-								 statusText: res.statusText,
-								 headers: res.headers};
-							res = new Response(text, options);
-
-							// Cache the replaced file.
-							if (cacheKey) {
-								console.log("Cache the replaced file: " + url + " to " + cacheKey + " -> " + res.statusText);
-								self.caches.open(cacheKey).then((cache) => {
-									cache.put(url, res.clone());
-
-								// Failed to open cache.
-								}).catch((error) => {
-									console.log(error.message);
-								});
-							}
-
-							// Resolves by replaced response.
-							console.log("Resolves by replaced response: " + url + " -> " + res.statusText);
-							resolve(res.clone());
-
-						// File is not text.
-						}).catch((error) => {
-							console.log(error.message);
-						});
-					}); // end of new Promise.
+			// Cache the fetched file.
+			console.log("Fetched file: " + url + " -> " + result.statusText);
+			let contentType = result.headers.get("Content-Type");
+			if (!contentType.match("text/html")) {
+				if (cacheKey) {
+					console.log("Cache the fetched file: " + url + " to " + cacheKey + " -> " + result.statusText);
+					self.caches.open(cacheKey).then((cache) => {
+						cache.put(url, result.clone());
+					});
 				}
 
-			// File not found.
-			} else {
-				console.log("Returns error: File not found: " + url + " -> " + res.statusText);
-				return res;
-			}
+				// Returns fetched response.
+				console.log("Returns fetched response. -> " + result.statusText);
+				return result.clone();
 
-		// Failed to fetch file.
-		}).catch((error) => {
-			console.log(error.message);
+			// Replace fetched html file.
+			} else {
+				return new Promise((resolve, reject) => {
+					result.text().then((text) => {
+						console.log("Fetched html file: " + text.replace(/\s+/g, " ").substr(-1000));
+
+						// Replace strings by manifest.
+						for (let key in this.replacing) {
+							console.log("Replacing: " + key + " -> " + this.replacing[key]);
+							let reg = new RegExp("(<.*class=\"" + key + "\".*>).*(<\/.*>)");
+							text = text.replace(reg, "$1" + this.replacing[key] + "$2");
+						}
+						console.log("Replaced file: " + text.replace(/\s+/g, " ").substr(-1000));
+
+						// Replaced responce.
+						let options = {status: result.status,
+							 statusText: result.statusText,
+							 headers: result.headers};
+						result = new Response(text, options);
+
+						// Cache the replaced file.
+						if (cacheKey) {
+							console.log("Cache the replaced file: " + url + " to " + cacheKey + " -> " + result.statusText);
+							self.caches.open(cacheKey).then((cache) => {
+								cache.put(url, result.clone());
+							});
+						}
+
+						// Resolves by replaced response.
+						console.log("Resolves by replaced response: " + url + " -> " + result.statusText);
+						resolve(result.clone());
+					});
+				}); // end of new Promise.
+			}
 		});
 	}
 
 	// Prefetch all content files to renew.
-	renew() {
-		return new Promise((resolve) => {
+	_renew() {
+		return new Promise((resolve, reject) => {
 			console.log("Renew worker.");
 
 			// Fetch new manifest file.
 			let url = this.manifest;
 			console.log("Fetch new manifest: " + url);
-			return fetch(url, {cache: "no-store"}).then((res) => {
-				if (!res.ok) {
-					console.log("File not found: " + url + " -> " + res.statusText);
-					resolve(res.clone());
-					return;
-				}
-				let contentType = res.headers.get("Content-Type");
-				if (!contentType.match("application/json")) {
-					console.log("File is not json: " + url + " -> " + res.statusText);
-					resolve(res.clone());
-					return;
-				}
+			return fetch(url, {cache: "no-store"}).then((result) => {
 
 				// Parse manifest json.
-				res.clone().json().then((manifest) => {
-					console.log("Fetched new manifest: " + JSON.stringify(manifest));
+				result.clone().json().then((manifest) => {
+					console.log("Parsed new manifest json: " + JSON.stringify(manifest));
 					let cacheKey = manifest.name + "/" + manifest.version;
 
 					// Not found new version.
 					if (cacheKey == this.cacheKey) {
 						console.log("Not found new version: " + cacheKey);
-						resolve(res.clone());
+						resolve(result.clone());
 
 					// Found new version.
 					} else {
 						console.log("Found new version: " + cacheKey + " old: " + this.cacheKey);
 
-						// Prefetch all content files.
+						// Prefetch and cache all content files.
 						console.log("Prefetch all content files.");
 						Promise.all(manifest.contents.map((content) => {
-							return this.fetchAndCache(content, cacheKey);
-						})).then(() => {
+							return this._fetchAndCache(content, cacheKey);
+						})).then(() => { // end of Promise.all.
 
 							// Cache new manifest.
-							console.log("Cache new manifest: " + url + " to * -> " + res.statusText);
-							self.caches.open("*").then((cache) => {
-								cache.put(url, res.clone());
-							});
+							cacheKey = "*";
+							console.log("Cache new manifest: " + url + " to " + cacheKey + " -> " + result.statusText);
+							self.caches.open(cacheKey).then((cache) => {
+								cache.put(url, result.clone());
 
-							// Returns fetched response.
-							console.log("Resolves by fetched response: " + url + " -> " + res.statusText);
-							resolve(res.clone());
+								// Resolves.
+								console.log("Renew worker completed.");
+								resolve(result.clone());
+							});
 						});
 					}
-
 				});
 			}).catch((error) => {
-				console.log(error.message);
+				console.log("Failed to parse manifest file.");
+				console.error(error.name, error.message);
+				reject();
 			});
 		}); // end of new Promise.
 	}
 
-	// Get manifest file from cache to start worker.
-	start() {
+	// Check installed worker.
+	_check() {
+		return new Promise((resolve, reject) => {
+			console.log("Check installed worker.");
+
+			// Get cached manifest file.
+			let url = this.manifest, cacheKey = "*";
+			console.log("Get cached manifest file: " + url + " from " + cacheKey);
+			self.caches.open(cacheKey).then((cache) => {
+				cache.match(url, {ignoreSearch: true}).then((result) => {
+					console.log("Found manifest file: " + url + " from " + cacheKey);
+
+					// Parse manifest json.
+					result.clone().json().then((manifest) => {
+						console.log("Parsed manifest json: " + JSON.stringify(manifest));
+
+						// Resolves.
+						console.log("Check worker completed.");
+						resolve(result.clone());
+					});
+				}).catch((error) => {
+					console.log("Failed to parse manifest file.");
+					console.error(error.name, error.message);
+					reject();
+				});
+			});
+		}); // end of new Promise.
+	}
+
+	// Set manifest file to start worker.
+	_start(result) {
 		if (this.cacheKey) {
-			console.log("Worker already installed.");
+			console.log("Worker already started.");
 			return Promise.resolve();
 		}
-		return new Promise((resolve) => {
+		return new Promise((resolve, reject) => {
 			console.log("Start worker.");
 
 			// Get cached manifest file.
 			let url = this.manifest, cacheKey = "*";
 			console.log("Get cached manifest file: " + url + " from " + cacheKey);
 			self.caches.open(cacheKey).then((cache) => {
-				cache.match(url, {ignoreSearch: true}).then((res) => {
-					if (!res.ok) {
-						console.log("File not found: " + url + " -> " + res.statusText);
-						return;
-					}
-					let contentType = res.headers.get("Content-Type");
-					if (!contentType.match("application/json")) {
-						console.log("File is not json: " + url + " -> " + res.statusText);
-						return;
-					}
+				cache.match(url, {ignoreSearch: true}).then((result) => {
+					console.log("Found manifest file: " + url + " from " + cacheKey);
 
 					// Parse manifest json.
-					res.json().then((manifest) => {
-						console.log("Found manifest: " + JSON.stringify(manifest));
+					result.clone().json().then((manifest) => {
+						console.log("Parsed manifest json: " + JSON.stringify(manifest));
 
 						// Set version and cache key.
 						this.cacheKey = manifest.name + "/" + manifest.version;
@@ -245,12 +225,14 @@ Worker = class {
 						console.log("Created replacing table: " + JSON.stringify(this.replacing));
 
 						// Resolves.
-						console.log("Resolves: Install worker completed.");
-						resolve();
+						console.log("Start worker completed.");
+						resolve(result.clone());
 					});
+				}).catch((error) => {
+					console.log("Failed to parse manifest file.");
+					console.error(error.name, error.message);
+					reject();
 				});
-			}).catch((error) => {
-				console.log(error.message);
 			});
 		}); // end of new Promise.
 	}
@@ -259,20 +241,30 @@ Worker = class {
 	install() {
 		return new Promise((resolve) => {
 
-			// Read manifest file to use cache.
-			this.start().then((res) => {
-				resolve(res);
+			// Check manifest file to use cache.
+			this._check().then((result) => {
+				console.log("Worker already installed.");
+				resolve(result);
 			}).catch((error) => {
-				console.log("Install worker.");
+				console.log("Reinstall worker.");
 
 				// Refetch manifest file.
 				let url = this.manifest, cacheKey = "*";
 				console.log("Refetch manifest file: " + url);
-				return this.fetchAndCache(content, cacheKey).then((res) => {
-					resolve(this.start());
+				this._fetchAndCache(url, cacheKey).then((result) => {
+
+					// Resolves.
+					console.log("Install worker completed.");
+					resolve(result);
+
+					// Prefetch all content files on background for this install.
+					this._renew();
+				}).catch((error) => {
+
+					// Failed but resolves to continue worker.
+					console.log("Failed to install worker.");
+					resolve();
 				});
-			}).catch((error) => {
-				console.log(error.message);
 			});
 		}); // end of new Promise.
 	}
@@ -282,7 +274,7 @@ Worker = class {
 		return new Promise((resolve) => {
 
 			// Read manifest file to use cache.
-			this.start().then(() => {
+			this._start().then(() => {
 
 				// Delete all cache files.
 				console.log("Delete all cache files: " + this.cacheKey);
@@ -295,12 +287,15 @@ Worker = class {
 					})).then(() => { // end of Promise.all.
 
 						// Resolves.
-						console.log("Resolves: Delete all cache files completed.");
+						console.log("Delete all cache files completed.");
 						resolve();
 					});
 				});
 			}).catch((error) => {
-				console.log(error.message);
+
+				// Failed but resolves to continue worker.
+				console.log("Failed to activate worker.");
+				resolve();
 			});
 		}); // end of new Promise.
 	}
@@ -309,22 +304,21 @@ Worker = class {
 	fetch(url) {
 		return new Promise((resolve) => {
 
-			// Read manifest file to use cache.
-			this.start().then(() => {
+			// Get cache or fetch and return response.
+			console.log("Get cache or fetch");
+			this._cacheOrFetch(url, this.cacheKey).then((result) => {
 
-				// Get cache or fetch and return response.
-				console.log("Get cache or fetch");
-				this.cacheOrFetch(url, this.cacheKey).then((res) => {
+				// Resolves.
+				console.log("Fetch by worker completed: " + url + " -> " + result.statusText);
+				resolve(result);
 
-					// Resolves.
-					console.log("Resolves: Fetch by worker completed: " + url + " -> " + res.statusText);
-					resolve(res);
-
-					// Prefetch all content files on background for next install.
-					this.renew();
-				});
+				// Prefetch all content files on background for next install.
+				this._renew();
 			}).catch((error) => {
-				console.log(error.message);
+
+				// Failed but resolves to continue worker.
+				console.log("Failed to fetch by worker.");
+				resolve();
 			});
 		}); // end of new Promise.
 	}
@@ -346,7 +340,6 @@ if (!self || !self.registration) {
 				})();
 			}
 		}
-
 	} catch (error) {
 		console.error(error.name, error.message);
 	}
@@ -355,30 +348,20 @@ if (!self || !self.registration) {
 } else {
 
 	// Event on installing worker.
-	self.addEventListener("install", (evt) => {
+	self.addEventListener("install", (event) => {
 		console.log("Install worker: " + worker.background);
-		evt.waitUntil(worker.install().then(() => {
-			console.log("Installed worker.");
-		}));
-		console.log("Installing worker.");
+		event.waitUntil(worker.install());
 	});
 
 	// Event on activating worker.
-	self.addEventListener("activate", (evt) => {
+	self.addEventListener("activate", (event) => {
 		console.log("Activate worker: " + worker.background);
-		evt.waitUntil(worker.activate().then(() => {
-			console.log("Activated worker.");
-		}));
-		console.log("Activating worker.");
+		event.waitUntil(worker.activate());
 	});
 
 	// Event on fetching network request.
-	self.addEventListener("fetch", (evt) => {
-		console.log("Fetch by worker: " + evt.request.url);
-		evt.respondWith(worker.fetch(evt.request.url).then((res) => {
-			console.log("Fetched by worker.");
-			return res;
-		}));
-		console.log("Fetching by worker.");
+	self.addEventListener("fetch", (event) => {
+		console.log("Fetch by worker: " + event.request.url);
+		event.respondWith(worker.fetch(event.request.url));
 	});
 }

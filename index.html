@@ -222,11 +222,11 @@ a {
 			}
 
 			// High beep on press button.
-			picoBeep(1200, 0.1);
+			picoBeep(1.2, 0.1);
 		} else {
 
 			// Low beep on press locked button.
-			picoBeep(-1200, 0.1);
+			picoBeep(-1.2, 0.1);
 		}
 	};
 
@@ -248,17 +248,17 @@ a {
 			}
 
 			// High beep on press button.
-			picoBeep(1200, 0.1);
+			picoBeep(1.2, 0.1);
 		} else {
 
 			// Low beep on press locked button.
-			picoBeep(-1200, 0.1);
+			picoBeep(-1.2, 0.1);
 		}
 	};
 
 	// Change player.
 	function changePlayer(x) {
-		if (!locked) {
+		if (!locked && player + x >= 1 && player + x <= playerMax) {
 			if (x != 0) {
 				setClock(count, addition, bonus, player + x);
 			} else {
@@ -266,11 +266,11 @@ a {
 			}
 
 			// High beep on press button.
-			picoBeep(1200, 0.1);
+			picoBeep(1.2, 0.1);
 		} else {
 
 			// Low beep on press locked button.
-			picoBeep(-1200, 0.1);
+			picoBeep(-1.2, 0.1);
 		}
 	};
 
@@ -917,9 +917,9 @@ a {
 					waiting = 2;
 
 					// High 3 beeps on pause.
-					picoBeep(1200, 0.1);
-					picoBeep(1200, 0.1, 0.2);
-					picoBeep(1200, 0.1, 0.4);
+					picoBeep(1.2, 0.1);
+					picoBeep(1.2, 0.1, 0.2);
+					picoBeep(1.2, 0.1, 0.4);
 				}
 
 			// Check user action on tapping.
@@ -970,8 +970,8 @@ a {
 					players[playerIndex].starting = true;
 
 					// High 2 beeps on starting.
-					picoBeep(1200, 0.1);
-					picoBeep(1200, 0.1, 0.2);
+					picoBeep(1.2, 0.1);
+					picoBeep(1.2, 0.1, 0.2);
 
 				} else {
 
@@ -980,7 +980,7 @@ a {
 					players[playerIndex].starting = true;
 
 					// High beep on switching.
-					picoBeep(1200, 0.1);
+					picoBeep(1.2, 0.1);
 				}
 
 				pausing = false;

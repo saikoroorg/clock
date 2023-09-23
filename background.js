@@ -5,6 +5,7 @@ Worker = class {
 		this.manifest = "./manifest.json"; // Manifest file.
 		this.replacing = {}; // Replacing table by manifest json.
 		this.cacheKey = null; // Cache key.
+		this.cacheName = null; // Cache key without version.
 	}
 
 	// Get file from cache or fetch.
@@ -240,6 +241,12 @@ Worker = class {
 				cache.match(url, {ignoreSearch: true}).then((result) => {
 					console.log("Found manifest file: " + url + " from " + cacheKey);
 
+					// Check result.
+					if (!result) {
+						console.log("Failed to get manifest file.");
+						reject();
+					}
+
 					// Check countent type.
 					let contentType = result.headers.get("Content-Type");
 					if (!contentType.match("application/json")) {
@@ -253,6 +260,7 @@ Worker = class {
 
 						// Set version and cache key.
 						this.cacheKey = manifest.name + "/" + manifest.version;
+						this.cacheName = manifest.name;
 						console.log("Set version: " + this.cacheKey);
 
 						// Set replacing table.
@@ -310,11 +318,17 @@ Worker = class {
 			// Read manifest file to use cache.
 			this._start().then(() => {
 
+				// Check cache name.
+				if (!this.cacheName) {
+					console.log("Failed to get manifest file.");
+					reject();
+				}
+
 				// Delete all cache files.
-				console.log("Delete all cache files: " + this.cacheKey);
+				console.log("Delete all cache files: " + this.cacheName);
 				self.caches.keys().then((keys) => {
 					Promise.all(keys.map((key) => {
-						if (key != this.cacheKey && key != "*") {
+						if (!key.indexOf(this.cacheName) && key != this.cacheKey) {
 							console.log("Delete old cache: " + key);
 							return self.caches.delete(key);
 						}

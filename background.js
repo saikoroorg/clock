@@ -374,7 +374,9 @@ if (!self || !self.registration) {
 				console.log("Register worker: " + worker.background);
 				(async()=>{
 					await navigator.serviceWorker.register(worker.background);
-				})();
+					})();
+			} else {
+				console.log("No worker.");
 			}
 		}
 

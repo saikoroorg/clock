@@ -337,8 +337,10 @@ Worker = class {
 				console.log("Not activated.");
 				resolve(fetch(url)); // Simple fetch.
 
-				// Reactivate for next fetch.
-				this.activate();
+				// Reinstall and reactivate for next fetch.
+				this.install().then(() => {
+					this.activate();
+				});
 			}
 
 			// Get cache or fetch and return response.

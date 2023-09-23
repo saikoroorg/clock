@@ -922,8 +922,14 @@ a {
 					picoBeep(1.2, 0.1, 0.4);
 				}
 
+			// Check user action on timeout.
+			} else if (action && action.z <= 0 && timeout) {
+
+					// Low beep on timeout.
+					picoBeep(-1.2, 0.1);
+
 			// Check user action on tapping.
-			} else if (action && action.z <= 0 && !timeout) {
+			} else if (action && action.z <= 0) {
 
 				if (playerIndex >= 0) {
 

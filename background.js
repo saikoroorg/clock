@@ -8,7 +8,7 @@ Worker = class {
 	}
 
 	// Get file from cache or fetch.
-	_cacheOrFetch(url, cacheKey=null) {
+	_cacheOrFetch(url, cacheKey=null, replacing=null) {
 		return new Promise((resolve, reject) => {
 			if (cacheKey) {
 
@@ -24,7 +24,7 @@ Worker = class {
 
 						// Not found cached file.
 						console.log("Not found cached file: " + url);
-						this._fetchAndCache(url, cacheKey).then((result) => {
+						this._fetchAndCache(url, cacheKey, replacing).then((result) => {
 
 							// Resolves by fetched response.
 							console.log("Resolves by fetched response: " + url + " -> " + result.statusText);
@@ -48,8 +48,8 @@ Worker = class {
 	}
 
 	// Fetch and cache.
-	_fetchAndCache(url, cacheKey) {
-		return fetch(url).then((result) => {
+	_fetchAndCache(url, cacheKey, replacing) {
+		return fetch(url, {cache: "no-store"}).then((result) => {
 
 			// Cache the fetched file.
 			console.log("Fetched file: " + url + " -> " + result.statusText);
@@ -73,10 +73,10 @@ Worker = class {
 						console.log("Fetched html file: " + text.replace(/\s+/g, " ").substr(-1000));
 
 						// Replace strings by manifest.
-						for (let key in this.replacing) {
-							console.log("Replacing: " + key + " -> " + this.replacing[key]);
+						for (let key in replacing) {
+							console.log("Replacing: " + key + " -> " + replacing[key]);
 							let reg = new RegExp("(<.*class=\"" + key + "\".*>).*(<\/.*>)");
-							text = text.replace(reg, "$1" + this.replacing[key] + "$2");
+							text = text.replace(reg, "$1" + replacing[key] + "$2");
 						}
 						console.log("Replaced file: " + text.replace(/\s+/g, " ").substr(-1000));
 
@@ -124,6 +124,7 @@ Worker = class {
 				result.clone().json().then((manifest) => {
 					console.log("Parsed new manifest json: " + JSON.stringify(manifest));
 					let cacheKey = manifest.name + "/" + manifest.version;
+					let replacing = this._replacing(manifest);
 
 					// Not found new version.
 					if (cacheKey == this.cacheKey) {
@@ -137,7 +138,7 @@ Worker = class {
 						// Prefetch and cache all content files.
 						console.log("Prefetch all content files.");
 						Promise.all(manifest.contents.map((content) => {
-							return this._fetchAndCache(content, cacheKey);
+							return this._fetchAndCache(content, cacheKey, replacing);
 						})).then(() => { // end of Promise.all.
 
 							// Cache new manifest.
@@ -197,6 +198,26 @@ Worker = class {
 		}); // end of new Promise.
 	}
 
+	// Replacing table.
+	_replacing(manifest) {
+		let replacing = {};
+		if (manifest.version) {
+			if (manifest.name) {
+				replacing.version = manifest.name + "#" + manifest.version.substr(-4);
+			} else {
+				replacing.version = "#" + manifest.version.substr(-4);
+			}
+		}
+		if (manifest.author) {
+			replacing.author = manifest.author;
+		}
+		if (manifest.short_name) {
+			replacing.title = manifest.short_name;
+		}
+		console.log("Created replacing table: " + JSON.stringify(replacing));
+		return replacing;
+	}
+
 	// Set manifest file to start worker.
 	_start(result) {
 		if (this.cacheKey) {
@@ -229,21 +250,7 @@ Worker = class {
 						console.log("Set version: " + this.cacheKey);
 
 						// Set replacing table.
-						this.replacing = {};
-						if (manifest.version) {
-							if (manifest.name) {
-								this.replacing.version = manifest.name + "#" + manifest.version.substr(-4);
-							} else {
-								this.replacing.version = "#" + manifest.version.substr(-4);
-							}
-						}
-						if (manifest.author) {
-							this.replacing.author = manifest.author;
-						}
-						if (manifest.short_name) {
-							this.replacing.title = manifest.short_name;
-						}
-						console.log("Created replacing table: " + JSON.stringify(this.replacing));
+						this.replacing = this._replacing(manifest);
 
 						// Resolves.
 						console.log("Start worker completed.");
@@ -270,9 +277,9 @@ Worker = class {
 				console.log("Reinstall worker.");
 
 				// Refetch manifest file.
-				let url = this.manifest, cacheKey = "*";
+				let url = this.manifest, cacheKey = "*", replacing = null;
 				console.log("Refetch manifest file: " + url);
-				this._fetchAndCache(url, cacheKey).then((result) => {
+				this._fetchAndCache(url, cacheKey, replacing).then((result) => {
 
 					// Resolves.
 					console.log("Install worker completed.");
@@ -325,6 +332,15 @@ Worker = class {
 	fetch(url) {
 		return new Promise((resolve) => {
 
+			// Not activated.
+			if (!this.cacheKey) {
+				console.log("Not activated.");
+				resolve(fetch(url)); // Simple fetch.
+
+				// Reactivate for next fetch.
+				this.activate();
+			}
+
 			// Get cache or fetch and return response.
 			console.log("Get cache or fetch");
 			this._cacheOrFetch(url, this.cacheKey).then((result) => {
@@ -339,7 +355,7 @@ Worker = class {
 
 				// Failed but resolves to continue worker.
 				console.log("Failed to fetch by worker.");
-				resolve();
+				resolve(fetch(url)); // Simple fetch.
 			});
 		}); // end of new Promise.
 	}

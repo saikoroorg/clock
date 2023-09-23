@@ -18,7 +18,7 @@ Worker = class {
 					cache.match(url, {ignoreSearch: true}).then((result) => {
 
 						// Resolves by cached response.
-						console.log("Resolves by cached response: " + url + " -> " + result.statusText);
+						console.log("Resolves by cached response: " + url + " -> " + result.status + " " + result.statusText);
 						resolve(result);
 					}).catch((error) => {
 
@@ -27,7 +27,7 @@ Worker = class {
 						this._fetchAndCache(url, cacheKey, replacing).then((result) => {
 
 							// Resolves by fetched response.
-							console.log("Resolves by fetched response: " + url + " -> " + result.statusText);
+							console.log("Resolves by fetched response: " + url + " -> " + result.status + " " + result.statusText);
 							resolve(result);
 						});
 					});
@@ -40,7 +40,7 @@ Worker = class {
 				fetch(url).then((result) => {
 
 					// Resolves by fetched response.
-					console.log("Resolves by fetched response: " + url + " -> " + result.statusText);
+					console.log("Resolves by fetched response: " + url + " -> " + result.status + " " + result.statusText);
 					resolve(result);
 				});
 			}
@@ -52,18 +52,18 @@ Worker = class {
 		return fetch(url, {cache: "no-store"}).then((result) => {
 
 			// Cache the fetched file.
-			console.log("Fetched file: " + url + " -> " + result.statusText);
+			console.log("Fetched file: " + url + " -> " + result.status + " " + result.statusText);
 			let contentType = result.headers.get("Content-Type");
 			if (!contentType.match("text/html")) {
 				if (cacheKey) {
-					console.log("Cache the fetched file: " + url + " to " + cacheKey + " -> " + result.statusText);
+					console.log("Cache the fetched file: " + url + " to " + cacheKey + " -> " + result.status + " " + result.statusText);
 					self.caches.open(cacheKey).then((cache) => {
 						cache.put(url, result.clone());
 					});
 				}
 
 				// Returns fetched response.
-				console.log("Returns fetched response. -> " + result.statusText);
+				console.log("Returns fetched response. -> " + result.status + " " + result.statusText);
 				return result.clone();
 
 			// Replace fetched html file.
@@ -88,14 +88,14 @@ Worker = class {
 
 						// Cache the replaced file.
 						if (cacheKey) {
-							console.log("Cache the replaced file: " + url + " to " + cacheKey + " -> " + result.statusText);
+							console.log("Cache the replaced file: " + url + " to " + cacheKey + " -> " + result.status + " " + result.statusText);
 							self.caches.open(cacheKey).then((cache) => {
 								cache.put(url, result.clone());
 							});
 						}
 
 						// Resolves by replaced response.
-						console.log("Resolves by replaced response: " + url + " -> " + result.statusText);
+						console.log("Resolves by replaced response: " + url + " -> " + result.status + " " + result.statusText);
 						resolve(result.clone());
 					});
 				}); // end of new Promise.
@@ -143,7 +143,7 @@ Worker = class {
 
 							// Cache new manifest.
 							cacheKey = "*";
-							console.log("Cache new manifest: " + url + " to " + cacheKey + " -> " + result.statusText);
+							console.log("Cache new manifest: " + url + " to " + cacheKey + " -> " + result.status + " " + result.statusText);
 							self.caches.open(cacheKey).then((cache) => {
 								cache.put(url, result.clone());
 
@@ -173,6 +173,12 @@ Worker = class {
 			self.caches.open(cacheKey).then((cache) => {
 				cache.match(url, {ignoreSearch: true}).then((result) => {
 					console.log("Found manifest file: " + url + " from " + cacheKey);
+
+					// Check result.
+					if (!result) {
+						console.log("Failed to get manifest file.");
+						reject();
+					}
 
 					// Check countent type.
 					let contentType = result.headers.get("Content-Type");
@@ -348,7 +354,7 @@ Worker = class {
 			this._cacheOrFetch(url, this.cacheKey).then((result) => {
 
 				// Resolves.
-				console.log("Fetch by worker completed: " + url + " -> " + result.statusText);
+				console.log("Fetch by worker completed: " + url + " -> " + result.status + " " + result.statusText);
 				resolve(result);
 
 				// Prefetch all content files on background for next install.

@@ -113,6 +113,13 @@ Worker = class {
 			console.log("Fetch new manifest: " + url);
 			return fetch(url, {cache: "no-store"}).then((result) => {
 
+				// Check countent type.
+				let contentType = result.headers.get("Content-Type");
+				if (!contentType.match("application/json")) {
+					console.log("Failed to parse manifest file.");
+					reject();
+				}
+
 				// Parse manifest json.
 				result.clone().json().then((manifest) => {
 					console.log("Parsed new manifest json: " + JSON.stringify(manifest));
@@ -166,6 +173,13 @@ Worker = class {
 				cache.match(url, {ignoreSearch: true}).then((result) => {
 					console.log("Found manifest file: " + url + " from " + cacheKey);
 
+					// Check countent type.
+					let contentType = result.headers.get("Content-Type");
+					if (!contentType.match("application/json")) {
+						console.log("Failed to parse manifest file.");
+						reject();
+					}
+
 					// Parse manifest json.
 					result.clone().json().then((manifest) => {
 						console.log("Parsed manifest json: " + JSON.stringify(manifest));
@@ -198,6 +212,13 @@ Worker = class {
 			self.caches.open(cacheKey).then((cache) => {
 				cache.match(url, {ignoreSearch: true}).then((result) => {
 					console.log("Found manifest file: " + url + " from " + cacheKey);
+
+					// Check countent type.
+					let contentType = result.headers.get("Content-Type");
+					if (!contentType.match("application/json")) {
+						console.log("Failed to parse manifest file.");
+						reject();
+					}
 
 					// Parse manifest json.
 					result.clone().json().then((manifest) => {

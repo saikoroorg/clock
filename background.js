@@ -119,6 +119,7 @@ Worker = class {
 				if (!contentType.match("application/json")) {
 					console.log("Failed to parse manifest file.");
 					reject();
+					return;
 				}
 
 				// Parse manifest json.
@@ -179,6 +180,7 @@ Worker = class {
 					if (!result) {
 						console.log("Failed to get manifest file.");
 						reject();
+						return;
 					}
 
 					// Check countent type.
@@ -186,6 +188,7 @@ Worker = class {
 					if (!contentType.match("application/json")) {
 						console.log("Failed to parse manifest file.");
 						reject();
+						return;
 					}
 
 					// Parse manifest json.
@@ -245,6 +248,7 @@ Worker = class {
 					if (!result) {
 						console.log("Failed to get manifest file.");
 						reject();
+						return;
 					}
 
 					// Check countent type.
@@ -252,6 +256,7 @@ Worker = class {
 					if (!contentType.match("application/json")) {
 						console.log("Failed to parse manifest file.");
 						reject();
+						return;
 					}
 
 					// Parse manifest json.
@@ -322,6 +327,7 @@ Worker = class {
 				if (!this.cacheName) {
 					console.log("Failed to get manifest file.");
 					reject();
+					return;
 				}
 
 				// Delete all cache files.

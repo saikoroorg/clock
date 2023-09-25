@@ -14,8 +14,6 @@ async function picoBeep(kcent=0, length=0.1, delay=0) {
 
 // Namespace.
 var pico = pico || {};
-pico.version = "0.1";
-pico.timestamp = "30922";
 
 // Sound class.
 pico.Sound = class {

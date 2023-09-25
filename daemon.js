@@ -4,8 +4,6 @@
 
 // Namespace.
 var pico = pico || {};
-pico.version = "0.1";
-pico.timestamp = "30925";
 
 // Worker class.
 pico.Worker = class {
@@ -368,34 +366,25 @@ pico.Worker = class {
 	fetch(url) {
 		return new Promise((resolve) => {
 
-			// Not activated.
-			if (!this.cacheKey) {
-				console.log("Not activated.");
-				resolve(fetch(url)); // Simple fetch.
+			// Read manifest file to use cache.
+			this._start().then(() => {
 
-				// Reinstall and reactivate for next fetch.
-				this.install().then(() => {
-					this.activate();
+				// Get cache or fetch and return response.
+				console.log("Get cache or fetch");
+				this._cacheOrFetch(url, this.cacheKey, this.replacing).then((result) => {
+
+					// Resolves.
+					console.log("Fetch by worker completed: " + url + " -> " + result.status + " " + result.statusText);
+					resolve(result);
+
+					// Prefetch all content files on background for next install.
+					this._renew();
+				}).catch((error) => {
+
+					// Failed but resolves to continue worker.
+					console.log("Failed to fetch by worker.");
+					resolve(fetch(url)); // Simple fetch.
 				});
-
-				return;
-			}
-
-			// Get cache or fetch and return response.
-			console.log("Get cache or fetch");
-			this._cacheOrFetch(url, this.cacheKey, this.replacing).then((result) => {
-
-				// Resolves.
-				console.log("Fetch by worker completed: " + url + " -> " + result.status + " " + result.statusText);
-				resolve(result);
-
-				// Prefetch all content files on background for next install.
-				this._renew();
-			}).catch((error) => {
-
-				// Failed but resolves to continue worker.
-				console.log("Failed to fetch by worker.");
-				resolve(fetch(url)); // Simple fetch.
 			});
 		}); // end of new Promise.
 	}
@@ -414,7 +403,7 @@ if (!self || !self.registration) {
 				console.log("Register worker: " + pico.worker.script);
 				(async()=>{
 					await navigator.serviceWorker.register(pico.worker.script);
-					})();
+				})();
 			} else {
 				console.log("No worker.");
 			}

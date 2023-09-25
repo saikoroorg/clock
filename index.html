@@ -60,10 +60,10 @@ a {
 	justify-content: flex-start; -webkit-justify-content: flex-start;
 	align-items: center; -webkit-align-items: center;
 }
-.logo .icon {
+.logo #icon {
 	width: 40px; height: 40px; padding: 10px; margin-left: -28px;
 }
-.logo .title {
+.logo #title {
 	font-size: 24px;
 	color: #000;
 }
@@ -131,8 +131,8 @@ a {
 <div id="container">
 	<h1 id="header">
 		<div class="logo">
-			<!--img class="icon" src="icon.svg"/!-->
-			<a class="title" href="?">Clock</a>
+			<!--img id="icon" src="icon.svg"/!-->
+			<a id="title" href="?">Clock</a>
 		</div>
 		<div class="menu">
 			<a class="item" id="playerLabel" href="javascript:changePlayer(1);">x2</a>
@@ -146,12 +146,12 @@ a {
 		<div class="screen" id="screen2"></div>
 	</div>
 	<h6 id="footer">
-		<div class="author"></div>/
-		<div class="version"></div>
+		<div id="author"></div>/
+		<div id="version"></div>
 	</h6>
 </div>
 <!--script>console.log = () => {};</script!-->
-<script src="background.js"></script>
+<script src="daemon.js"></script>
 <script src="cube-api-0.8.js"></script>
 <script src="sound.js"></script>
 <!--Menu--><script>

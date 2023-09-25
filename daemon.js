@@ -1,7 +1,16 @@
-// Service worker.
-Worker = class {
+/* PICO Daemon module */
+
+//************************************************************/
+
+// Namespace.
+var pico = pico || {};
+pico.version = "0.1";
+pico.timestamp = "30925";
+
+// Worker class.
+pico.Worker = class {
 	constructor() {
-		this.background = "./background.js"; // This script file.
+		this.script = "./daemon.js"; // This script file.
 		this.manifest = "./manifest.json"; // Manifest file.
 		this.replacing = {}; // Replacing table by manifest json.
 		this.cacheKey = null; // Cache key.
@@ -9,7 +18,7 @@ Worker = class {
 	}
 
 	// Get file from cache or fetch.
-	_cacheOrFetch(url, cacheKey=null, replacing=null) {
+	_cacheOrFetch(url, cacheKey, replacing) {
 		return new Promise((resolve, reject) => {
 			if (cacheKey) {
 
@@ -76,8 +85,10 @@ Worker = class {
 						// Replace strings by manifest.
 						for (let key in replacing) {
 							console.log("Replacing: " + key + " -> " + replacing[key]);
-							let reg = new RegExp("(<.*class=\"" + key + "\".*>).*(<\/.*>)");
-							text = text.replace(reg, "$1" + replacing[key] + "$2");
+							let reg1 = new RegExp("(<.*id=\"" + key + "\".*>).*(<\/.*>)");
+							text = text.replace(reg1, "$1" + replacing[key] + "$2");
+							let reg2 = new RegExp("(<" + key + ".*>).*(<\/" + key + ".*>)");
+							text = text.replace(reg2, "$1" + replacing[key] + "$2");
 						}
 						console.log("Replaced file: " + text.replace(/\s+/g, " ").substr(-1000));
 
@@ -164,46 +175,45 @@ Worker = class {
 		}); // end of new Promise.
 	}
 
-	// Check installed worker.
+	// Check new manifest file.
 	_check() {
 		return new Promise((resolve, reject) => {
-			console.log("Check installed worker.");
+			console.log("Check new maniefst file.");
 
-			// Get cached manifest file.
-			let url = this.manifest, cacheKey = "*";
-			console.log("Get cached manifest file: " + url + " from " + cacheKey);
-			self.caches.open(cacheKey).then((cache) => {
-				cache.match(url, {ignoreSearch: true}).then((result) => {
-					console.log("Found manifest file: " + url + " from " + cacheKey);
+			// Fetch new manifest file.
+			let url = this.manifest;
+			console.log("Fetch new manifest: " + url);
+			return fetch(url, {cache: "no-store"}).then((result) => {
 
-					// Check result.
-					if (!result) {
-						console.log("Failed to get manifest file.");
-						reject();
-						return;
-					}
-
-					// Check countent type.
-					let contentType = result.headers.get("Content-Type");
-					if (!contentType.match("application/json")) {
-						console.log("Failed to parse manifest file.");
-						reject();
-						return;
-					}
-
-					// Parse manifest json.
-					result.clone().json().then((manifest) => {
-						console.log("Parsed manifest json: " + JSON.stringify(manifest));
-
-						// Resolves.
-						console.log("Check worker completed.");
-						resolve(result.clone());
-					});
-				}).catch((error) => {
+				// Check countent type.
+				let contentType = result.headers.get("Content-Type");
+				if (!contentType.match("application/json")) {
 					console.log("Failed to parse manifest file.");
-					console.error(error.name, error.message);
 					reject();
+					return;
+				}
+
+				// Parse manifest json.
+				result.clone().json().then((manifest) => {
+					console.log("Parsed new manifest json: " + JSON.stringify(manifest));
+					let cacheKey = manifest.name + "/" + manifest.version;
+					let replacing = this._replacing(manifest);
+
+					// Not found new version.
+					if (cacheKey == this.cacheKey) {
+						console.log("Not found new version: " + cacheKey);
+						resolve(result.clone());
+
+					// Found new version.
+					} else {
+						console.log("Found new version: " + cacheKey + " old: " + this.cacheKey);
+						reject();
+					}
 				});
+			}).catch((error) => {
+				console.log("Failed to fetch manifest file.");
+				console.error(error.name, error.message);
+				reject();
 			});
 		}); // end of new Promise.
 	}
@@ -367,11 +377,13 @@ Worker = class {
 				this.install().then(() => {
 					this.activate();
 				});
+
+				return;
 			}
 
 			// Get cache or fetch and return response.
 			console.log("Get cache or fetch");
-			this._cacheOrFetch(url, this.cacheKey).then((result) => {
+			this._cacheOrFetch(url, this.cacheKey, this.replacing).then((result) => {
 
 				// Resolves.
 				console.log("Fetch by worker completed: " + url + " -> " + result.status + " " + result.statusText);
@@ -389,19 +401,19 @@ Worker = class {
 	}
 };
 
-// Create worker.
-var worker = new Worker();
+// Master worker.
+pico.worker = new pico.Worker();
 
 // Script for client to register worker.
 if (!self || !self.registration) {
 	try {
 
 		// Register worker.
-		if (worker.background) {
+		if (pico.worker.script) {
 			if (navigator.serviceWorker) {
-				console.log("Register worker: " + worker.background);
+				console.log("Register worker: " + pico.worker.script);
 				(async()=>{
-					await navigator.serviceWorker.register(worker.background);
+					await navigator.serviceWorker.register(pico.worker.script);
 					})();
 			} else {
 				console.log("No worker.");
@@ -427,19 +439,19 @@ if (!self || !self.registration) {
 
 	// Event on installing worker.
 	self.addEventListener("install", (event) => {
-		console.log("Install worker: " + worker.background);
-		event.waitUntil(worker.install());
+		console.log("Install worker: " + pico.worker.script);
+		event.waitUntil(pico.worker.install());
 	});
 
 	// Event on activating worker.
 	self.addEventListener("activate", (event) => {
-		console.log("Activate worker: " + worker.background);
-		event.waitUntil(worker.activate());
+		console.log("Activate worker: " + pico.worker.script);
+		event.waitUntil(pico.worker.activate());
 	});
 
 	// Event on fetching network request.
 	self.addEventListener("fetch", (event) => {
 		console.log("Fetch by worker: " + event.request.url);
-		event.respondWith(worker.fetch(event.request.url));
+		event.respondWith(pico.worker.fetch(event.request.url));
 	});
 }

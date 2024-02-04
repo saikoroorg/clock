@@ -1,0 +1,192 @@
+body {
+	font-family: Courier, monospace, sans-serif;
+	background-color: #ffffff;
+	color: #7f7f7f;
+	overflow: hidden;
+	user-select: none; -webkit-user-select: none;
+}
+a {
+	color: #3f3f3f;
+	text-decoration: none;
+}
+#container {
+	width: 100%; height: 100%;
+	display: flex; display: -webkit-flex;
+	flex-direction: column; -webkit-flex-direction: column;
+	justify-content: flex-start; -webkit-justify-content: flex-start;
+	align-items: center; -webkit-align-items: center;
+}
+#header {
+	z-index: 100;
+	margin: 0px;
+	flex: 0 1 auto;
+	display: flex; display: -webkit-flex;
+	flex-direction: row; -webkit-flex-direction: row;
+	justify-content: space-between; -webkit-justify-content: space-between;
+	align-items: center; -webkit-align-items: center;
+}
+#contents {
+	position: relative;
+	margin: 8px;
+	flex: 1 1 auto;
+	display: flex; display: -webkit-flex;
+	flex-direction: column; -webkit-flex-direction: column;
+	justify-content: center; -webkit-justify-content: center;
+	align-items: center; -webkit-align-items: center;
+	background-color: #dfdfdf;
+}
+#screen {
+	aspect-ratio: 1;
+}
+#widescreen {
+	aspect-ratio: 1;
+}
+.offscreen {
+	display: none;
+}
+#footer {
+	z-index: 100;
+	width: 100%; height: 12px; margin-top: -8px;
+	flex: 0 1 auto;
+	display: flex; display: -webkit-flex;
+	flex-direction: row; -webkit-flex-direction: row;
+	justify-content: flex-end; -webkit-justify-content: flex-end;
+	align-items: center; -webkit-align-items: center;
+	font-size: 12px;
+	opacity: 0.1;
+}
+.logo {
+	height: 60px; margin: 0px 16px;
+	color: #3f3f3f;
+	display: none;
+}
+.logo #title {
+	font-size: 24px;
+}
+.logo #subtitle {
+	font-size: 24px;
+}
+.menu {
+	display: flex; display: -webkit-flex;
+	flex-direction: row; -webkit-flex-direction: row;
+	justify-content: space-between; -webkit-justify-content: space-between;
+	align-items: flex-end; -webkit-align-items: flex-end;
+}
+.item {
+	width: 40px; height: 40px; margin: 0px;
+	display: flex; display: -webkit-flex;
+	flex-direction: column; -webkit-flex-direction: column;
+	justify-content: center; -webkit-justify-content: center;
+	align-items: center; -webkit-align-items: center;
+	font-size: 16px;
+}
+.icon {
+	width: 32px; height: 32px;
+	display: flex; display: -webkit-flex;
+	flex-direction: column; -webkit-flex-direction: column;
+	justify-content: center; -webkit-justify-content: center;
+	align-items: center; -webkit-align-items: center;
+	display: none;
+}
+.item.dark {
+	background-color: #3f3f3f;
+	color: #dfdfdf;
+}
+.light {
+	background-color: #dfdfdf;
+	color: #3f3f3f;
+}
+.secret {;
+	display: none;
+}
+.menu a {
+	transform: scale(1);
+	opacity: 1;
+}
+.menu a:hover {
+	transform: scale(1);
+	opacity: 0.6;
+}
+.menu a:active {
+	transform: scale(0.9);
+	opacity: 1;
+}
+@media (max-height: 399px) {
+	#container {
+		flex-direction: row; -webkit-flex-direction: row;
+	}
+	#contents {
+		width: 100%; height: 100%;
+	}
+	#header {
+		order: 1; height: 100%;
+		display: flex; display: -webkit-flex;
+		flex-direction: column; -webkit-flex-direction: column;
+		justify-content: space-between; -webkit-justify-content: space-between;
+		align-items: center; -webkit-align-items: center;
+	}
+	.menu {
+		display: flex; display: -webkit-flex;
+		flex-direction: column; -webkit-flex-direction: column;
+		justify-content: space-between; -webkit-justify-content: space-between;
+		align-items: flex-end; -webkit-align-items: flex-end;
+	}
+}
+@media (min-height: 400px) {
+	#header {
+		width: 95%;
+	}
+	#contents {
+		width: 95%; height: 80%;
+	}
+	@media (max-width: 319px) {
+	}
+	@media (min-width: 320px) {
+		.center {
+			position: absolute;
+			left: 50%; transform: translate(-50%, 0);
+		}
+		.logo {
+			display: flex; display: -webkit-flex;
+			flex-direction: row; -webkit-flex-direction: row;
+			justify-content: flex-start; -webkit-justify-content: flex-start;
+			align-items: center; -webkit-align-items: center;
+		}
+	}
+}
+@media (min-aspect-ratio: 1.0) {
+	#screen {
+		height: 100%;
+	}
+	#widescreen {
+		height: 150%;
+	}
+}
+@media (max-aspect-ratio: 1.0) {
+	#screen {
+		width: 100%;
+	}
+	#widescreen {
+		height: 100%;
+	}
+}
+@media (prefers-color-scheme: dark) {
+	body {
+		background-color: #7f7f7f;
+		color: #ffffff;
+	}
+	a {
+		color: #dfdfdf;
+	}
+	.logo {
+		color: #dfdfdf;
+	}
+	.item.dark {
+		background-color: #dfdfdf;
+		color: #3f3f3f;
+	}
+	.light {
+		background-color: #3f3f3f;
+		color: #dfdfdf;
+	}
+}

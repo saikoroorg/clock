@@ -1,1019 +1,345 @@
 <html>
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1">
-<title>Clock</title>
-<link rel="icon" type="image/svg" href="icon.svg">
-<link rel="apple-touch-icon" href="icon.png" sizes="192x192">
-<link rel="manifest" href="manifest.json">
-<style>
-body {
-	font-family: Courier, monospace, sans-serif;
-	background-color: #fff;
-}
-a {
-	color: #ccc;
-	text-decoration: none;
-}
-#container {
-	width: 100%; height: 100%;
-	display: flex; display: -webkit-flex;
-	flex-direction: column; -webkit-flex-direction: column;
-	justify-content: flex-start; -webkit-justify-content: flex-start;
-	align-items: center; -webkit-align-items: center;
-}
-#header {
-	width: 95%; margin: 0px;
-	flex: 0 1 auto;
-	display: flex; display: -webkit-flex;
-	flex-direction: row; -webkit-flex-direction: row;
-	justify-content: space-between; -webkit-justify-content: space-between;
-	align-items: center; -webkit-align-items: center;
-}
-#contents {
-	width: 95%; height: 90%;
-	flex: 1 1 auto;
-	display: flex; display: -webkit-flex;
-	flex-direction: column; -webkit-flex-direction: column;
-	justify-content: center; -webkit-justify-content: center;
-	align-items: center; -webkit-align-items: center;
-	background-color: #ccc;
-}
-.screen {
-	width: 100%; height: 100%;
-	background-color: #ccc;
-}
-#footer {
-	width: 95%; margin: 0px;
-	flex: 0 1 auto;
-	display: flex; display: -webkit-flex;
-	flex-direction: row; -webkit-flex-direction: row;
-	justify-content: flex-end; -webkit-justify-content: flex-end;
-	align-items: center; -webkit-align-items: center;
-	font-size: 12px;
-	color: #eee;
-}
-.logo {
-	width: 160px; height: 60px; margin: 0px 16px;
-	display: flex; display: -webkit-flex;
-	flex-direction: row; -webkit-flex-direction: row;
-	justify-content: flex-start; -webkit-justify-content: flex-start;
-	align-items: center; -webkit-align-items: center;
-}
-.logo #icon {
-	width: 40px; height: 40px; padding: 10px; margin-left: -28px;
-}
-.logo #title {
-	font-size: 24px;
-	color: #000;
-}
-.menu {
-	width: 120px; height: 40px; margin: 5px 0px;
-	display: flex; display: -webkit-flex;
-	flex-direction: row; -webkit-flex-direction: row;
-	justify-content: space-between; -webkit-justify-content: space-between;
-	align-items: flex-end; -webkit-align-items: flex-end;
-}
-.menu .item {
-	width: 40px; height: 40px; margin: 0px;
-	display: flex; display: -webkit-flex;
-	flex-direction: column; -webkit-flex-direction: column;
-	justify-content: center; -webkit-justify-content: center;
-	align-items: center; -webkit-align-items: center;
-	color: #888;
-	font-size: 16px;
-}
-.menu .subitem {
-	width: 40px; height: 15px; margin-top: -5px; margin-left: -40px;
-	display: flex; display: -webkit-flex;
-	flex-direction: column; -webkit-flex-direction: column;
-	justify-content: center; -webkit-justify-content: center;
-	align-items: center; -webkit-align-items: center;
-	color: #888;
-	background-color: none;
-	font-size: 10px;
-	opacity: 0.5;
-}
-.menu .dark {
-	color: #fff;
-}
-.menu .item.dark {
-	background-color: #000;
-}
-.menu .light {
-	color: #000;
-}
-.menu .item.light {;
-	background-color: #ccc;
-}
-.menu a {
-	transform: scale(1);
-	opacity: 1;
-}
-.menu a:hover {
-	transform: scale(1);
-	opacity: 0.6;
-}
-.menu a:active {
-	transform: scale(0.9);
-	opacity: 1;
-}
-@media (orientation: landscape) {
-	#contents {
-		flex-direction: row; -webkit-flex-direction: row;
-		justify-content: center; -webkit-justify-content: center;
-		align-items: center; -webkit-align-items: center;
-	}
-}
-</style>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1" />
+<title></title>
+<link rel="icon" type="image/svg" href="icon.svg" />
+<link rel="apple-touch-icon" href="icon.png" sizes="192x192" />
+<link rel="manifest" href="app.json" />
+<link rel="stylesheet" href="pico.css" />
 </head>
 <body>
 <div id="container">
 	<h1 id="header">
 		<div class="logo">
-			<!--img id="icon" src="icon.svg"/!-->
-			<a id="title" href="?">Clock</a>
+			<a id="title" href="javascript:pico.app.onReset();">
+			<a id="subtitle" href="javascript:top.location.reload();"></a>
+		</div>
+		<div class="menu center">
+			<a class="item light secret" id="action" href="javascript:pico.app.onAction();">
+				<span id="actionText"></span>
+				<img class="icon" id="actionIcon" src="" />
+			</a>
 		</div>
 		<div class="menu">
-			<a class="item" id="playerLabel" href="javascript:changePlayer(1);">x2</a>
-			<a class="subitem" href="javascript:changePlayer(-1);">-</a>
-			<a class="item dark" id="countLabel" href="javascript:changeCount();">10</a>
-			<a class="item light" id="optionLabel" href="javascript:changeOption();">-</a>
+			<a class="item clear secret" id="minus" href="javascript:pico.app.onSelect(-1);">-</a>
+			<a class="item light secret" id="select" href="javascript:pico.app.onSelect(0);">
+				<span id="selectText"></span>
+				<img class="icon" id="selectIcon" src="" />
+			</a>
+			<a class="item clear secret" id="plus" href="javascript:pico.app.onSelect(+1);">+</a>
 		</div>
 	</h1>
 	<div id="contents">
-		<div class="screen" id="screen1"></div>
-		<div class="screen" id="screen2"></div>
+		<div id="screen" class="picoImage picoTouch"></div>
 	</div>
-	<h6 id="footer">
-		<div id="author"></div>/
-		<div id="version"></div>
-	</h6>
 </div>
+<h6 id="footer">
+	<div id="author"></div>/
+	<div id="version"></div>
+</h6>
 <!--script>console.log = () => {};</script!-->
-<script src="daemon.js"></script>
-<script src="cube-api-0.8.js"></script>
-<script src="sound.js"></script>
-<!--Menu--><script>
-	var player = 2; // Player count.
-	var count = 0; // Time count.
-	var addition = 0; // Additional time count.
-	var bonus = 0; // Bonus time count.
-	var playing = -1; // Playing count.
-	var locked = false; // Locked menu.
+<script src="pico.js"></script>
+<script src="index.js"></script>
+<!--Event--><script>
 
-	const playerMax = 8; // Maximum player count.
-	const numberMax = 6; // Maximum number of digits.
-	const countMax = 999 * 60; // Maximum count.
+// Change label.
+function picoLabel(id, text=null, icon=null) {
+	pico.app.setLabel(id, text, icon);
+}
 
-	// Set clock.
-	function setClock(c, a=0, b=0, p=0) {
-		count = c > countMax ? countMax : c > 0 ? c : 0;
-		addition = a > countMax ? countMax : a > 0 ? a : 0;
-		bonus = b > 99 ? 99 : b; // Hourglass mode if b < 0.
-		player = p > playerMax ? playerMax : p > 0 ? p : 1;
+// Change title.
+function picoTitle(text=null, subtext=null) {
+	pico.app.setTitle(text, subtext);
+}
 
-		// Reset clock information.
-		var e = document.getElementById("countLabel");
-		if (e) {
-			if (count > 0) {
-				e.innerHTML = "" + cubeDiv(count, 60);
-				e.classList.add('dark');
-				e.classList.remove('light');
-			} else {
-				e.innerHTML = "0";
-				e.classList.add('light');
-				e.classList.remove('dark');
-			}
-		}
-		e = document.getElementById("optionLabel");
-		if (e) {
-			if (bonus != 0) {
-				e.innerHTML = "+" + (bonus > 0 ? bonus : "");
-				e.classList.add('dark');
-				e.classList.remove('light');
-			} else {
-				e.innerHTML = "-" + (addition > 0 ? addition : "");
-				e.classList.add('light');
-				e.classList.remove('dark');
-			}
-		}
-		e = document.getElementById("playerLabel");
-		if (e) {
-			e.innerHTML = "x" + player;
-		}
+// Switch script or share.
+async function picoSwitch(script=null) {
+	await pico.app.switchScript(script);
+}
 
-		playing = -2; // Replay.
-	};
+// Share screen image.
+async function picoShareScreen(bgcolors=null, watermark=null) {
+	await pico.app.shareScreen(bgcolors, watermark);
+}
 
-	// Change count.
-	function changeCount() {
-		if (!locked) {
-			if (count <  5 * 60) {
-				setClock(5 * 60, addition, bonus, player); // 5m
-			} else if (count < 10 * 60) {
-				setClock(10 * 60, addition, bonus, player); // 10m
-			} else if (count < 15 * 60) {
-				setClock(15 * 60, addition, bonus, player); // 15m
-			} else if (count < 20 * 60) {
-				setClock(20 * 60, addition, bonus, player); // 20m
-			} else {
-				setClock(0, addition, bonus, player);
-			}
+// Enable wake lock.
+function picoWakelock() {
+	pico.app.wakelock();
+}
 
-			// High beep on press button.
-			picoBeep(1.2, 0.1);
+// Enable wide screen and return true if landscape mode.
+function picoWidescreen(enable=true) {
+	return pico.app.widescreen(enable);
+}
+
+// Enable wide screen and return true if landscape mode.
+function picoWidescreen(enable=true) {
+	return pico.app.widescreen(enable);
+}
+
+//************************************************************/
+
+// Namespace.
+var pico = pico || {};
+
+// App class.
+pico.App = class {
+	static script = "app.js"; // Default script.
+
+	// constructor.
+	constructor() {
+		this.path = "./index.html"; // App html path.
+		this.url = null; // Referenced url.
+		this.script = null; // App script.
+		this.refer = null; // Referenced script.
+		this.title = ""; // App title.
+		this.ver = 0; // Protocol version.
+		this.author = "*"; // App author.
+		this.name = ""; // App name.
+		this.lock = "picoAppLock" + Date.now(); // Lock object identifier.
+
+		// Load app version.
+		let e = document.getElementById("author");
+		if (e && e.innerText) {
+			this.author = e.innerText;
 		} else {
-
-			// Low beep on press locked button.
-			picoBeep(-1.2, 0.1);
-		}
-	};
-
-	// Change option.
-	function changeOption() {
-		if (!locked) {
-			if (bonus == 0 && addition < 10) {
-				setClock(count, 10, 0, player); // -10s additional time (Byoyomi)
-			} else if (bonus == 0 && addition < 30) {
-				setClock(count, 30, 0, player); // -30s additional time (Byoyomi)
-			} else if (bonus == 0) {
-				setClock(count, 0, -1, player); // +?s opposite time (Hourglass)
-			} else if (bonus < 5) {
-				setClock(count, 0, 5, player); // +5s bonus time (Fischer)
-			} else if (bonus < 10) {
-				setClock(count, 0, 10, player); // +10s bonus time (Fischer)
-			} else {
-				setClock(count, 0, 0, player);
+			if (window.location.hostname) {
+				this.author = window.location.hostname;
 			}
-
-			// High beep on press button.
-			picoBeep(1.2, 0.1);
+			if (e) {
+				e.innerText = this.author;
+			}
+		}
+		e = document.getElementById("version");
+		if (e && e.innerText) {
+			this.name = e.innerText.replace(/[\?\#].*$/, "");
 		} else {
-
-			// Low beep on press locked button.
-			picoBeep(-1.2, 0.1);
-		}
-	};
-
-	// Change player.
-	function changePlayer(x) {
-		if (!locked && player + x >= 1 && player + x <= playerMax) {
-			if (x != 0) {
-				setClock(count, addition, bonus, player + x);
-			} else {
-				setClock(count, addition, bonus, 2);
+			if (window.location.pathname) {
+				this.name = window.location.pathname.replace(/(^\/|[\?\#].*$|\/$)/g, "");
+				if (this.name.length > 32) {
+					this.name = ".." + this.name.slice(-30);
+				}
 			}
+			if (e) {
+				e.innerText = this.name;
+			}
+		}
 
-			// High beep on press button.
-			picoBeep(1.2, 0.1);
+		// Load app script.
+		let script = picoStrings("s");
+		if (script) {
+			this.script = script;
+		}
+		e = document.createElement('script');
+		e.src = this.script ? this.script : pico.App.script;
+		document.body.appendChild(e);
+
+		window.addEventListener("resize", async () => {
+			await this.onResize()
+		}); // Resize.
+		window.addEventListener("load", async () => {
+			await this.onLoad();
+		}); // Load.
+	}
+
+	// On reset button.
+	async onReset() {
+		await navigator.locks.request(this.lock, async (lock) => {
+			picoResetParams();
+			if (this.ver > 0) {
+				picoSetStrings(this.ver, "v");
+			}
+			await picoReload();
+		}); // end of lock.
+	}
+
+	// On acction button.
+	async onAction() {
+		if (typeof appAction === "function") {
+			await navigator.locks.request(this.lock, async (lock) => {
+				await appAction();
+			}); // end of lock.
+		}
+	}
+
+	// On select button.
+	async onSelect(x) {
+		if (typeof appSelect === "function") {
+			await navigator.locks.request(this.lock, async (lock) => {
+				await appSelect(x);
+			}); // end of lock.
+		}
+	}
+
+	// On resize event.
+	async onResize() {
+		if (typeof appResize === "function") {
+			await navigator.locks.request(this.lock, async (lock) => {
+				await appResize();
+			}); // end of lock.
+		}
+	}
+
+	// On load event.
+	async onLoad() {
+		try {
+			let refer = picoStrings("r");
+			if (refer) {
+				this.refer = refer;
+			}
+			let title = picoStrings("t");
+			if (title) {
+				this.title = title;
+				picoTitle(this.title);
+			}
+			this.url = picoStrings("u");
+			this.ver = picoStrings("v");
+			if (typeof appLoad === "function") {
+				await navigator.locks.request(this.lock, async (lock) => {
+					await appLoad();
+				}); // end of lock.
+			}
+			picoFlush(); // Flush to skip first read.
+			for (;;) {
+				await picoRead();
+				await navigator.locks.request(this.lock, async (lock) => {
+					picoClear();
+					await appMain();
+					await picoFlip(0);
+				}); // end of lock.
+			}
+		} catch (error) {
+			console.error(error.name, error.message);
+		}
+	}
+
+	// Change label.
+	setLabel(id, text=null, icon=null) {
+		let e = document.getElementById(id);
+		if (e) {
+			e.style.display = (text || icon) ? "flex" : "none";
+			let e1 = document.getElementById(id + "Text");
+			let e2 = document.getElementById(id + "Icon");
+			if (e1 && text) {
+				e1.style.display = "flex";
+				e1.innerText = text;
+				if (e2 && !icon) {
+					e2.style.display = "none";
+				}
+			} else if (e2 && icon) {
+				e2.style.display = "flex";
+				e2.src = icon;
+				if (e1 && !text) {
+					e1.style.display = "none";
+				}
+			} else if (text) {
+				e.innerText = text;
+			}
+		}
+		picoFlush();
+	}
+
+	// Change title.
+	setTitle(text=null, subtext=null) {
+		let e = document.getElementsByTagName("title");
+		if (e && e[0]) {
+			if (text) {
+				e[0].style.display = "flex";
+				e[0].innerText = text;
+			} else {
+				e[0].style.display = "none";
+				e[0].innerText = "";
+			}
+		}
+		if (text) {
+			this.title = text;
+			picoLabel("title", text);
+		}
+		if (subtext) {
+			picoLabel("subtitle", subtext)
+		}
+	}
+
+	// Switch script or share.
+	async switchScript(script=null) {
+		if (this.ver > 0) {
+			picoSetStrings(this.ver, "v");
+		}
+
+		// Change and reload script.
+		if (script) {
+			picoSetStrings(this.path, "u");
+			if (this.title) {
+				picoSetStrings(this.title, "t");
+			}
+			picoSetStrings(script, "s");
+			if (this.script) {
+				picoSetStrings(this.script, "r");
+			}
+			await picoReload();
+
+		// Back or jump to next app.
+		} else if (this.url) {
+			if (this.refer) {
+				picoSetStrings(this.refer, "s");
+			}
+			await picoReload(this.url);
+
+		// Share.
 		} else {
-
-			// Low beep on press locked button.
-			picoBeep(-1.2, 0.1);
-		}
-	};
-
-	// Get query parameters.
-	let params = cubeParamNumbers();
-
-	// Additional time mode. (Byoyomi)
-	if (cubeParamContains(0, "a")) {
-		setClock(params[0] * 60, params[1], 0, params[2]);
-		locked = true;
-
-	// Bonus time mode. (Fischer) / Hourglass mode.
-	} else if (cubeParamContains(0, "b")) {
-		setClock(params[0] * 60, 0, params[1] > 0 ? params[1] : -1, params[2]);
-		locked = true;
-
-	// Simple multi players mode. (Kiremake)
-	} else if (cubeParamContains(0, "x")) {
-		setClock(params[0] * 60, 0, 0, params[1]);
-		locked = true;
-
-	// Simple 2 players mode. (Kiremake)
-	} else if (params[0] > 0) {
-		setClock(params[0] * 60, 0, 0, 2);
-		locked = true;
-
-	// Default.
-	} else {
-		setClock(10 * 60, 0, 0, 2);
-	}
-
-</script><!--/Menu-->
-<!--Main--><script>(async()=>{
-
-	// Screen.
-	const screenMax = 2;
-	var screens = [], joypads = [];
-	const screenWidth = 200, screenHeight = 150;
-	for (let j = screenMax - 1; j >= 0; j--) {
-		screens[j] = cubeScreen("screen", screenWidth, screenHeight);
-		joypads[j] = cubeJoypad(screens[j]);
-	}
-	//cubeResizeScreen(80, 120);
-
-	// Player.
-	//const playerMax = 2; // Maximum player count.
-	var playerCount = 2; // Player count.
-	var playerIndex = 0; // Current player index.
-	var playerCountMin2 = 2; // Player count for hourglass mode.
-
-	// Player class.
-	Player = class {
-		constructor() {
-			this.count = 0; // Time count.
-			this.addition = 0; // Additional time count.
-			this.bonus = 0; // Bonus time count.
-			this.current = 0; // Current time count.
-			this.consumed = 0; // Consumed time count.
-			this.frames = []; // Sprite frames by current time.
-			this.length = 0; // Sprite frame length.
-			this.starting = false; // Start flag.
-		}
-	};
-
-	// Create players.
-	var players = [];
-	for (let j = 0; j < playerMax; j++) {
-		players[j] = new Player();
-	}
-
-	// Clock.
-	const clockMax = playerMax + 1; // Maximum clock count.
-	//const numberMax = 6; // Maximum number of digits.
-	var clockCount = 2; // Clock count.
-	const clockScale = 4;
-	const buttonWidth = numberWidth = 40;
-
-	// Clock class.
-	Clock = class {
-		constructor() {
-			this.button = null; // Button sprite.
-			this.screen = null; // Target screen.
-			this.scale = 1; // Sprite scale.
-			this.angle = 0; // Sprite angle.
-			this.numbers = []; // Number sprites.
-			this.length = 0; // Number sprite length.
-			this.center = cubeVector(); // Number center position.
-		}
-	};
-
-	// Create clocks.
-	var clocks = [];
-	for (let k = 0; k < clockMax; k++) {
-		clocks[k] = new Clock();
-		clocks[k].button = await cubeSprite("image.svg", buttonWidth, buttonWidth);
-		for (let j = 0; j < numberMax; j++) {
-			clocks[k].numbers[j] = await cubeSprite("image.svg", numberWidth, numberWidth);
-		}
-	}
-
-	// Playing states.
-	//var playing = 0; // Playing count.
-	var waiting = 1; // Waiting state: 0=playing, 1=w82start, 2=w82restart.
-	var pausing = false; // Pausing on pressing.
-	var timeout = false; // Timeout flag.
-	var hourglass = false; // Hourglass mode.
-	var counting = false; // Counting up/down flag.
-	while (true) {
-
-		// Reset count.
-		if (playing < 0) {
-
-			// Reset playing states.
-			waiting = 1;
-			starting = 0;
-			pausing = false;
-			timeout = false;
-			hourglass = bonus < 0;
-			counting = false;
-
-			// Reset player states.
-			playerCount = player;
-			playerIndex = -1;
-			playerCountMin2 = playerCount > 2 ? playerCount : 2; // Minimum 2 players for hourglass mode.
-			clockCount = playerCount <= 2 ? playerCount : playerCount + 1; // Add playing button on 3+ players mode.
-			for (let j = 0; j < playerCountMin2; j++) {
-				players[j].count = players[j].current = count;
-				players[j].addition = addition;
-				players[j].bonus = bonus;
-				players[j].consumed = 0;
-				players[j].starting = false;
+			if (this.script) {
+				picoSetStrings(this.script, "s");
 			}
+			await picoShare();
+		}
+	}
 
-			// Reset layouts.
-			// 1 Screen for solo player.
-			if (playerCount <= 1) {
-				cubeEnableScreen(false, screens[1]);
-				for (let j = 0; j < 1; j++) {
-					clocks[j].screen = screens[j];
-					clocks[j].center.x = screenWidth / 2;
-					clocks[j].center.y = screenHeight / 2;
-					clocks[j].scale = clockScale;
-					clocks[j].angle = 0;
-				}
+	// Enable wake lock.
+	wakelock() {
+		try {
 
-			// 2 Screens for 2 players.
-			} else if (playerCount <= 2) {
-				cubeEnableScreen(true, screens[1]);
-				for (let j = 0; j < 2; j++) {
-					clocks[j].screen = screens[j];
-					clocks[j].center.x = screenWidth / 2;
-					clocks[j].center.y = screenHeight / 2;
-					clocks[j].scale = clockScale;
-					clocks[j].angle = 0;
-				}
-
-			// 2 Screens for 3+ players.
+			// Wake lock.
+			// Not work on iOS 16 PWA.
+			// https://bugs.webkit.org/show_bug.cgi?id=254545
+			if (navigator.wakeLock) {
+				console.log("Request wake lock.");
+				navigator.wakeLock.request("screen");
 			} else {
-				cubeEnableScreen(true, screens[1]);
-				clocks[0].screen = screens[0];
-				clocks[0].center.x = screenWidth / 2;
-				clocks[0].center.y = screenHeight / 2;
-				clocks[0].scale = clockScale;
-				clocks[0].angle = 0;
-
-				if (playerCount <= 4) {
-					for (let j = 0; j < playerCount; j++) {
-						clocks[j + 1].screen = screens[1];
-						clocks[j + 1].center.x = screenWidth * (j + 1) / (playerCount + 1);
-						clocks[j + 1].center.y = screenHeight / 2;
-						clocks[j + 1].scale = clockScale / playerCount;
-						clocks[j + 1].angle = 0;
-					}
-				} else {
-					let playerCount2 = cubeDiv(playerCount, 2);
-					let playerCount1 = playerCount - playerCount2;
-					for (let j = 0; j < playerCount1; j++) {
-						clocks[j + 1].screen = screens[1];
-						clocks[j + 1].center.x = screenWidth * (j + 1) / (playerCount1 + 1);
-						clocks[j + 1].center.y = screenHeight * 1 / 3;
-						clocks[j + 1].scale = clockScale / playerCount1;
-						clocks[j + 1].angle = 0;
-					}
-					for (let j = playerCount1; j < playerCount; j++) {
-						clocks[j + 1].screen = screens[1];
-						clocks[j + 1].center.x = screenWidth * (j - playerCount1 + 1) / (playerCount2 + 1);
-						clocks[j + 1].center.y = screenHeight * 2 / 3;
-						clocks[j + 1].scale = clockScale / playerCount1;
-						clocks[j + 1].angle = 0;
-					}
-				}
+				console.log("No wake lock.");
 			}
-		}
-
-		// Start clock.
-		let startTime = cubeTime();
-
-		// Playing loop.
-		for (playing = 1; playing >= 1; playing++) {
-			let currentTime = cubeTime();
-			let spendTime = currentTime - startTime;
-			startTime = currentTime;
-
-			// Update time count.
-			if (!waiting && !pausing && !timeout) {
-				players[playerIndex].consumed += spendTime / 1000; // Chessclock style.
-				// players[playerIndex].consumed += cubeDiv(spendTime, 1000); // Stopwatch style.
-
-				// Main time count.
-				if (players[playerIndex].count > 0) {
-
-					// Update all reversed players count on hourglass mode.
-					if (players[playerIndex].bonus < 0) {
-						for (let j = 0; j < playerCountMin2; j++) {
-							if (j != playerIndex) {
-								players[j].current = players[j].count + players[playerIndex].consumed;
-							}
-						}
-					}
-
-					// Update main count.
-					players[playerIndex].current = players[playerIndex].count - players[playerIndex].consumed;
-					if (players[playerIndex].current <= 0) {
-
-						// Start additional time.
-						if (players[playerIndex].addition > 0) {
-
-							// Adjust remained consumed count to avoid continuous beep.
-							players[playerIndex].current = players[playerIndex].consumed = players[playerIndex].consumed - players[playerIndex].count;
-							players[playerIndex].count = 0;
-
-							// Restart.
-							playing = -1;
-
-						// Time out.
-						} else {
-							players[playerIndex].current = players[playerIndex].count = players[playerIndex].consumed = 0;
-							timeout = true;
-
-							// Long beep on timeout.
-							picoBeep(0, 4);
-						}
-					}
-
-				// Additional time count.
-				// (0 Additional time == Free time count)
-				} else if (players[playerIndex].addition >= 0) {
-					players[playerIndex].current = players[playerIndex].consumed > countMax ? countMax : players[playerIndex].consumed;
-
-					// Time out.
-					if (players[playerIndex].addition > 0 && players[playerIndex].current >= players[playerIndex].addition) {
-						players[playerIndex].current = players[playerIndex].addition;
-						timeout = true;
-
-						// Long beep on timeout.
-						picoBeep(0, 4);
-					}
-				}
-			}
-
-			// Beep timing.
-			let counter = -1;
-			if (!waiting && !pausing && !timeout && playerIndex >= 0) {
-
-				// Starting count.
-				if (players[playerIndex].starting) {
-					console.log("Starting count.");
-
-					players[playerIndex].starting = false;
-					counting = false; // Reset flag to avoid continuous beep.
-
-				// Count down on main time count.
-				} else if (players[playerIndex].count > 0) {
-					if (players[playerIndex].addition > 0) {
-						counter = players[playerIndex].current + 60; // No sound for the last 60 seconds.
-					} else {
-						counter = players[playerIndex].current;
-					}
-
-				// Count up on additional time count.
-				} else {
-					if (players[playerIndex].addition <= 0) {
-						counter = 1000*60 - players[playerIndex].current; // No sound for the last XX seconds.
-					} else if (players[playerIndex].addition <= 5) {
-						counter = players[playerIndex].addition - players[playerIndex].current + 5; // Change sound for the last 5 to 10 seconds.
-					} else {
-						counter = players[playerIndex].addition - players[playerIndex].current;
-					}
-				}
-			}
-
-			// Update counting cycle.
-			if (counter >= 0) {
-				if (cubeMod(counter * 1000, 1000) < 500) {
-					counting = true;
-
-				// Beep on counting flag switched.
-				} else if (counting) {
-
-					// Long beep last 5 seconds.
-					if (counter < 5) {
-						console.log("Long beep last 5 seconds.");
-						picoBeep(0, 0.5);
-
-					// Beep last 10 seconds.
-					} else if (counter < 10) {
-						console.log("Beep last 10 seconds.");
-						picoBeep(0, 0.1);
-
-					// Beep every 10 seconds for the last 30 seconds.
-					} else if (counter < 30 && !cubeMod(counter + 1, 10)) {
-						console.log("Beep every 10 seconds for the last 30 seconds.");
-						picoBeep(0, 0.1);
-
-					// Beep every 60 seconds.
-					} else if (!cubeMod(counter + 1, 60)) {
-						console.log("Beep every 60 seconds.");
-						picoBeep(0, 0.1);
-					}
-					counting = false;
-				}
-			}
-
-			// Update player states.
-			for (let j = 0; j < playerCount; j++) {
-				players[j].length = 0;
-
-				// Show delay about 1 second for count down on main time count.
-				let r = 0;
-				if (players[j].count > 0 && !(hourglass && j != playerIndex)) {
-					r = cubeMod(cubeCut(players[j].current, true), 60); // Round up decimal to integer.
-				} else {
-					r = cubeMod(players[j].current, 60);
-				}
-
-				// Seconds portion of the playing time.
-				while (players[j].length < 2) {
-					players[j].frames[players[j].length] = cubeMod(r, 10) + 1;
-					r = cubeDiv(r, 10);
-					players[j].length++;
-				}
-
-				// Colon mark.
-				if (!waiting && !pausing && !timeout && j == playerIndex) {
-					players[j].frames[players[j].length] = counting ? 0 : 12;
-				} else {
-					players[j].frames[players[j].length] = 12;
-				}
-				players[j].length++;
-
-				// Show delay about 1 second for count down on main time count.
-				if (players[j].count > 0) {
-					r = cubeDiv(cubeCut(players[j].current, true), 60); // Round up decimal to integer.
-				} else {
-					r = cubeDiv(players[j].current, 60);
-				}
-
-				// Minute portion of the playing time.
-				while (r > 0 || players[j].length < 5) {
-
-					// Main time count.
-					if (players[j].count > 0) {
-						players[j].frames[players[j].length] = cubeMod(r, 10) + 1;
-
-					// Additional time count.
-					} else {
-						if (r > 0 && players[j].current >= 60) {
-							players[j].frames[players[j].length] = cubeMod(r, 10) + 1;
-						} else {
-							players[j].frames[players[j].length] = 0;
-						}
-					}
-					r = cubeDiv(r, 10);
-					players[j].length++;
-				}
-			}
-
-			// Update solo player states.
-			/*if (playerCount == 1) {
-				players[1].length = 0;
-
-				// Milliseconds portion of the playing time.
-				let r = cubeMod(players[0].current * 1000, 1000);
-				while (players[1].length < 3) {
-					players[1].frames[players[1].length] = cubeMod(r, 10) + 1;
-					r = cubeDiv(r, 10);
-					players[1].length++;
-				}
-
-				// Time separator for milliseconds.
-				players[1].frames[players[1].length] = 11;
-				players[1].length++;
-			}*/
-			
-			// Update angle by screen orientation.
-			let portrait = false;
-			if (playerCount == 2) {
-				let localPoses = [];
-				for (let j = 0; j < screenMax; j++) {
-					localPoses[j] = cubeScreenLocalPos(cubeVector(), screens[j]);
-				}
-				clocks[0].angle = 0;
-				if (localPoses[1].y > localPoses[0].y + screenHeight / 2) {
-					portrait = true;
-					clocks[1].angle = 180;
-				} else {
-					clocks[1].angle = 0;
-				}
-			}
-
-			// Update angle for hourglass mode.
-			if (hourglass) {
-
-				// For solo player.
-				if (playerCount <= 1) {
-					for (let j = 0; j < playerCountMin2; j++) {
-						if (waiting != 1 && j != playerIndex) {
-							clocks[j].angle = 180;
-						} else {
-							clocks[j].angle = 0;
-						}
-					}
-
-				// For 2 players without portrait mode.
-				} else if (playerCount <= 2 && !portrait) {
-					for (let j = 0; j < playerCountMin2; j++) {
-						if (waiting != 1 && j != playerIndex) {
-							clocks[j].angle = 180;
-						} else {
-							clocks[j].angle = 0;
-						}
-					}
-
-				// For 3+ players.
-				} else if (playerCount >= 3) {
-					for (let j = 1; j < clockMax; j++) {
-						if (j != playerIndex + 1) {
-							clocks[j].angle = 180;
-						} else {
-							clocks[j].angle = 0;
-						}
-					}
-				}
-			}
-
-			// Update button sprites.
-			let p = playing >= 0 && playing < 6 ? 1 - 0.025 * (6 - playing) : 1;
-			for (let k = 0; k < clockMax; k++) {
-
-				// Switching clocks for 1-2 players.
-				if (playerCount <= 2) {
-					if (k < clockCount) {
-						let s = clocks[k].scale;
-						cubeAnimate(hourglass && !portrait ? 15 : 15, clocks[k].button);
-						cubeRotate(clocks[k].angle, clocks[k].button);
-
-						// Waiting.
-						if (waiting) {
-							if (waiting >= 2 && !pausing) { // Wait to restart.
-								cubeDilute(0.6, clocks[k].button);
-								cubeExpand(s, clocks[k].button);
-								cubeMove(clocks[k].center.x, clocks[k].center.y, clocks[k].button);
-							} else if (pausing && k == playerIndex) { // Just starting.
-								cubeDilute(1, clocks[k].button);
-								cubeExpand(s * p, clocks[k].button);
-								cubeMove(clocks[k].center.x, clocks[k].center.y, clocks[k].button);
-							} else if (playerIndex < 0) { // Waiting.
-								cubeDilute(1, clocks[k].button);
-								cubeExpand(s, clocks[k].button);
-								cubeMove(clocks[k].center.x, clocks[k].center.y, clocks[k].button);
-							} else { // Opposite player.
-								cubeDilute(0.2, clocks[k].button);
-								cubeExpand(s, clocks[k].button);
-								cubeMove(clocks[k].center.x, clocks[k].center.y, clocks[k].button);
-							}
-
-						// Playing.
-						} else {
-							if (k == playerIndex) { // Playing.
-								cubeDilute(p, clocks[k].button);
-								cubeExpand(s * p, clocks[k].button);
-								cubeMove(clocks[k].center.x, clocks[k].center.y, clocks[k].button);
-							} else if (hourglass && playerCount <= 1) { // Reversed hourglass solo player.
-								cubeDilute(0.6, clocks[k].button);
-								cubeExpand(s * p, clocks[k].button);
-								cubeMove(clocks[k].center.x, clocks[k].center.y, clocks[k].button);
-							} else { // Opposite player.
-								cubeDilute(0.2, clocks[k].button);
-								cubeExpand(s, clocks[k].button);
-								cubeMove(clocks[k].center.x, clocks[k].center.y, clocks[k].button);
-							}
-						}
-					} else {
-						cubeAnimate(0, clocks[k].button);
-					}
-
-				// Cyclic clocks for 3+ playres.
-				} else {
-					if (k < clockCount) {
-						let s = clocks[k].scale;
-						cubeAnimate(hourglass && !portrait ? 15 : 15, clocks[k].button);
-						cubeRotate(clocks[k].angle, clocks[k].button);
-
-						// Waiting to start.
-						if (waiting == 1) {
-							if (k == 0) { // Playing.
-								if (pausing) { // Just starting.
-									cubeDilute(1, clocks[k].button);
-									cubeExpand(s * p, clocks[k].button);
-									cubeMove(clocks[k].center.x, clocks[k].center.y, clocks[k].button);
-								} else { // Waiting.
-									cubeDilute(1, clocks[k].button);
-									cubeExpand(s, clocks[k].button);
-									cubeMove(clocks[k].center.x, clocks[k].center.y, clocks[k].button);
-								}
-							} else { // Another players.
-								cubeDilute(0.2, clocks[k].button);
-								cubeExpand(s, clocks[k].button);
-								cubeMove(clocks[k].center.x, clocks[k].center.y, clocks[k].button);
-							}
-
-						// Playing.
-						} else {
-							if (k == 0 || k == playerIndex + 1) { // Playing or target player.
-								if (waiting >= 2 && !pausing) { // Wait to restart.
-										cubeDilute(0.6, clocks[k].button);
-										cubeExpand(s, clocks[k].button);
-										cubeMove(clocks[k].center.x, clocks[k].center.y, clocks[k].button);
-								} else {
-									if (k == 0) { // Playing
-										cubeDilute(p, clocks[k].button);
-										cubeExpand(s * p, clocks[k].button);
-										cubeMove(clocks[k].center.x, clocks[k].center.y, clocks[k].button);
-									} else if (k == playerIndex + 1) { // Target player.
-										cubeDilute(p, clocks[k].button);
-										cubeExpand(s * p, clocks[k].button);
-										cubeMove(clocks[k].center.x, clocks[k].center.y, clocks[k].button);
-									}
-								}
-							} else { // Another players.
-								cubeDilute(0.2, clocks[k].button);
-								cubeExpand(s, clocks[k].button);
-								cubeMove(clocks[k].center.x, clocks[k].center.y, clocks[k].button);
-							}
-						}
-					} else {
-						cubeAnimate(0, clocks[k].button);
-					}
-				}
-			}
-
-			// Update number sprites.
-			for (let j = 0; j < clockMax; j++) {
-				let k = j;
-				if (playerCount >= 3 && j < clockCount) {
-					if (j == 0) {
-						k = playerIndex >= 0 ? playerIndex : 0;
-					} else {
-						k = j - 1;
-					}
-					clocks[j].length = players[k].length;
-				} else if (playerCount <= 2 && j < clockCount) {
-					clocks[j].length = players[k].length;
-				} else {
-					clocks[j].length = 0;
-				}
-				for (let i = 0; i < numberMax; i++) {
-					if (j < playerCount + 1 && i < clocks[j].length && clocks[j].length > 0) {
-						cubeAnimate(players[k].frames[i], clocks[j].numbers[i]);
-						let s = 1.5 / (clocks[j].length + 1); // l=5: s=1/4
-						cubeExpand(clocks[j].scale * s, clocks[j].numbers[i]);
-						cubeRotate(clocks[j].angle, clocks[j].numbers[i]);
-						let d = (i * 2 + 1) / clocks[j].length - 1; // l=5: d=(-0.8 -0.4 0 +0.4 +0.8)
-						let dx = numberWidth * clocks[j].scale * s * d; // Number sprite real width = 6/20 = 0.3
-						if (clocks[j].angle >= 180) {
-							cubeMove(clocks[j].center.x + dx, clocks[j].center.y, clocks[j].numbers[i]);
-						} else {
-							cubeMove(clocks[j].center.x - dx, clocks[j].center.y, clocks[j].numbers[i]);
-						}
-					} else {
-						cubeAnimate(0, clocks[j].numbers[i]);
-					}
-				}
-			}
-
-			// Draw button and number sprites.
-			for (let j = 0; j < playerCount + 1; j++) {
-				cubeDraw(clocks[j].button, clocks[j].screen);
-				for (let i = 0; i < clocks[j].length; i++) {
-					cubeDraw(clocks[j].numbers[i], clocks[j].screen);
-				}
-			}
-
-			// Wait for input.
-			await cubeWait(10);
-
-			// Read input.
-			for (let j = 0; j < screenMax; j++) {
-				await cubeReadJoypad(0, joypads[j]);
-			}
-			let action = (playerCount == 2 && !waiting) ? cubeJoypadAction(joypads[playerIndex]) :
-				cubeJoypadAction(joypads[0]) || cubeJoypadAction(joypads[1]);
-			let motion = (playerCount == 2 && !waiting) ? cubeJoypadMotion(joypads[playerIndex]) :
-				cubeJoypadMotion(joypads[0]) || cubeJoypadMotion(joypads[1]);
-
-			// Cancel/Reset on pressed.
-			if (motion && motion.z >= 0.5) {
-
-				// Reset timeout or starting.
-				if (timeout || waiting == 1) {
-					timeout = false;
-					playing = -2;
-
-				// Pause playing.
-				} else {
-					if (playerIndex >= 0) {
-
-						// Update time count.
-						if (players[playerIndex].count > 0) {
-
-							// Update all players count.
-							if (players[playerIndex].bonus < 0) {
-								for (let j = 0; j < playerMax; j++) {
-									let c = players[j].count + (j == playerIndex ? -players[playerIndex].consumed : players[playerIndex].consumed);
-									players[j].current = players[j].count = c > countMax ? countMax : c > 0 ? c : 0;
-								}
-								players[playerIndex].consumed = 0;
-
-							// Update current players count.
-							} else {
-								let c = players[playerIndex].count - players[playerIndex].consumed;
-								players[playerIndex].current = players[playerIndex].count = c > 0 ? c : 0;
-								players[playerIndex].consumed = 0;
-							}
-						}
-					}
-
-					// Pause.
-					pausing = false;
-				}
-
-				// Reset waiting state.
-				if (!waiting) {
-					waiting = 2;
-
-					// High 3 beeps on pause.
-					picoBeep(1.2, 0.1);
-					picoBeep(1.2, 0.1, 0.2);
-					picoBeep(1.2, 0.1, 0.4);
-				}
-
-			// Check user action on timeout.
-			} else if (action && action.z <= 0 && timeout) {
-
-					// Low beep on timeout.
-					picoBeep(-1.2, 0.1);
-
-			// Check user action on tapping.
-			} else if (action && action.z <= 0) {
-
-				if (playerIndex >= 0) {
-
-					// Update time count on turn end.
-					if (players[playerIndex].count > 0) {
-
-						// Update all players count.
-						if (players[playerIndex].bonus < 0) {
-							for (let j = 0; j < playerMax; j++) {
-								let c = players[j].count + (j == playerIndex ? -players[playerIndex].consumed : players[playerIndex].consumed);
-								players[j].current = players[j].count = c > countMax ? countMax : c > 0 ? c : 0;
-							}
-							players[playerIndex].consumed = 0;
-
-						// Add bonus time.
-						} else {
-							let c = players[playerIndex].count - players[playerIndex].consumed + players[playerIndex].bonus;
-							players[playerIndex].current = players[playerIndex].count = c > countMax ? countMax : c > 0 ? c : 0;
-							players[playerIndex].consumed = 0;
-						}
-
-					// Reset additional time count on turn end.
-					} else if (players[playerIndex].addition > 0) {
-						players[playerIndex].current = players[playerIndex].consumed = 0;
-					}
-				}
-
-				// Start.
-				if (waiting) {
-
-					// Start from opposite side on 2 players mode.
-					if (playerCount == 2) {
-						if (cubeJoypadAction(joypads[0])) {
-							playerIndex = 1;
-						} else {
-							playerIndex = 0;
-						}
-					} else if (playerIndex < 0) {
-						playerIndex = 0;
-					}
-
-					// Start.
-					waiting = 0;
-					players[playerIndex].starting = true;
-
-					// High 2 beeps on starting.
-					picoBeep(1.2, 0.1);
-					picoBeep(1.2, 0.1, 0.2);
-
-				} else {
-
-					// Switch players.
-					playerIndex = cubeMod(playerIndex + 1, playerCount > 2 ? playerCount : 2);
-					players[playerIndex].starting = true;
-
-					// High beep on switching.
-					picoBeep(1.2, 0.1);
-				}
-
-				pausing = false;
-				playing = -1;
-
-			// Check user motion.
-			} else if (motion) {
-
-				// Start pausing.
-				pausing = true;
-				playing = 1;
-
-				// Waiting to start from opposite side on 2 players mode.
-				if (waiting && !timeout) {
-					if (playerCount == 2) {
-						if (cubeJoypadMotion(joypads[0])) {
-							playerIndex = 0;
-						} else {
-							playerIndex = 1;
-						}
-					} else if (playerIndex < 0) {
-						playerIndex = 0;
-					}
-				}
-			}
+		} catch (error) {
+			console.error(error.name, error.message);
 		}
 	}
-})();</script><!--/Main-->
+
+	// Enable wide screen and return true if landscape mode.
+	widescreen(enable) {
+		let e = document.getElementById(enable ? "screen" : "widescreen");
+		if (e) {
+			e.id = enable ? "widescreen" : "screen";
+		}
+
+		// True if landscape mode.
+		return window.matchMedia("(min-aspect-ratio: 1.0)").matches;
+	}
+
+	// Share screen image.
+	async shareScreen(bgcolors=null, watermark=null) {
+		if (bgcolors == null) {
+			bgcolors = [223,223,223, 255,255,255];
+		}
+		if (watermark == null) {
+			watermark = this.author + "/" + this.name;
+		}
+		let file = await picoScreenFile(bgcolors, watermark);
+		let files = [file];
+		await picoShare(null, files);
+	}
+}
+
+// Master app.
+pico.app = new pico.App();
+</script><!--/Event-->
 </body>
 </html>

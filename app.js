@@ -22,19 +22,16 @@ async function appUpdate(c, a=0, b=0, p=0) {
 	bonus = b > 99 ? 99 : b; // Hourglass mode if b < 0.
 	player = p > playerMax ? playerMax : p > 0 ? p : 2;
 
-	picoLabel("minus", "x" + player);
 	if (count > 0) {
 		picoLabel("select", "" + picoDiv(count, 60));
 	} else {
 		picoLabel("select", "0");
 	}
-	if (bonus != 0) {
-		picoLabel("plus", "+" + (bonus > 0 ? bonus : ""));
-	} else {
-		picoLabel("plus", "-" + (addition > 0 ? addition : ""));
-	}
+	picoLabel("minus", "-");
+	picoLabel("plus", "+");
 
 	playing = -2; // Replay.
+
 }
 
 // Action button.
@@ -44,59 +41,55 @@ async function appAction() {
 // Select button.
 async function appSelect(x) {
 
-	if(locked) {
-
-		// Low beep on press locked button.
-		picoBeep(-1.2, 0.1);
-
-	// Change player.
-	} else if (x < 0) {
-
-		if (x != 0) {
-			appUpdate(count, addition, bonus, picoMod(player, playerMax) + 1);
-		} else {
-			appUpdate(count, addition, bonus, 2);
-		}
-
-		// High beep on press button.
-		picoBeep(1.2, 0.1);
-
 	// Change count.
-	} else if (x == 0) {
+	if (x != 0) {
 
-		if (count <  5 * 60) {
-			appUpdate(5 * 60, addition, bonus, player); // 5m
-		} else if (count < 10 * 60) {
-			appUpdate(10 * 60, addition, bonus, player); // 10m
-		} else if (count < 15 * 60) {
-			appUpdate(15 * 60, addition, bonus, player); // 15m
-		} else if (count < 20 * 60) {
-			appUpdate(20 * 60, addition, bonus, player); // 20m
+		// Change count of total time.
+		if (waiting == 1) {
+			if ((x > 0 && count + x <= 999 * 60) || (x < 0 && count + x > 0)) {
+				count = picoDiv(count + x * 60, 60) * 60;
+				appUpdate(count, addition, bonus, player);
+				picoBeep(1.2, 0.1);
+
+			} else {
+				picoBeep(-1.2, 0.1);
+			}
+
+		// Change count of each player time.
+		} else if (pausing) {
+			let c = players[playerIndex].count > 0 ? players[playerIndex].current : 0;
+			if ((x > 0 && c + x <= 999 * 60) || (x < 0 && c + x > 0)) {
+				players[playerIndex].count = players[playerIndex].current = picoDiv(c + x * 60, 60) * 60;
+				picoBeep(1.2, 0.1);
+
+			} else {
+				picoBeep(-1.2, 0.1);
+			}
 		} else {
-			appUpdate(0, addition, bonus, player);
+			picoBeep(-1.2, 0.1);
 		}
-
-		// High beep on press button.
-		picoBeep(1.2, 0.1);
 
 	// Change option.
 	} else {
-		if (bonus == 0 && addition < 10) {
-			appUpdate(count, 10, 0, player); // -10s additional time (Byoyomi)
-		} else if (bonus == 0 && addition < 30) {
-			appUpdate(count, 30, 0, player); // -30s additional time (Byoyomi)
-		} else if (bonus == 0) {
-			appUpdate(count, 0, -1, player); // +?s opposite time (Hourglass)
-		} else if (bonus < 5) {
-			appUpdate(count, 0, 5, player); // +5s bonus time (Fischer)
-		} else if (bonus < 10) {
-			appUpdate(count, 0, 10, player); // +10s bonus time (Fischer)
-		} else {
-			appUpdate(count, 0, 0, player);
-		}
 
-		// High beep on press button.
-		picoBeep(1.2, 0.1);
+		if (waiting || pausing) {
+			if (bonus == 0 && addition < 10) {
+				appUpdate(count, 10, 0, player); // -10s additional time (Byoyomi)
+			} else if (bonus == 0 && addition < 30) {
+				appUpdate(count, 30, 0, player); // -30s additional time (Byoyomi)
+			} else if (bonus == 0) {
+				appUpdate(count, 0, -1, player); // +?s opposite time (Hourglass)
+			} else if (bonus < 5) {
+				appUpdate(count, 0, 5, player); // +5s bonus time (Fischer)
+			} else if (bonus < 10) {
+				appUpdate(count, 0, 10, player); // +10s bonus time (Fischer)
+			} else {
+				appUpdate(count, 0, 0, player);
+			}
+			picoBeep(1.2, 0.1);
+		} else {
+			picoBeep(-1.2, 0.1);
+		}
 	}
 }
 
@@ -254,7 +247,7 @@ async function appResize() {
 		if (landscape) {
 			screens[0].centerx = clockPosX;
 			screens[0].centery = 0;
-			screens[1].centerx = -clockPosX;
+			screens[1].centerx = clockPosX;
 			screens[1].centery = 0;
 			screens[0].width  = screens[1].width  = 50;
 			screens[0].height = screens[1].height = 200;
@@ -577,10 +570,10 @@ async function appMain() {
 
 				// Waiting.
 				if (waiting) {
-					if (waiting >= 2) { // Wait to restart.
+					if (waiting >= 2 && k == playerIndex) { // Wait to restart.
 						await picoRect(clockRects, 2, x, y, clocks[k].angle, clocks[k].scale * p);
 					} else if (pausing && k == playerIndex) { // Just starting.
-						await picoRect(clockRects, 0, x, y, clocks[k].angle, clocks[k].scale * p);
+						await picoRect(clockRects, 2, x, y, clocks[k].angle, clocks[k].scale * p);
 					} else if (playerIndex < 0) { // Waiting.
 						await picoRect(clockRects, 0, x, y, clocks[k].angle, clocks[k].scale * p);
 					} else { // Opposite player.
@@ -609,7 +602,7 @@ async function appMain() {
 				if (waiting == 1) {
 					if (k == 0) { // Playing.
 						if (pausing) { // Just starting.
-							await picoRect(clockRects, 0, x, y, clocks[k].angle, clocks[k].scale * p);
+							await picoRect(clockRects, 2, x, y, clocks[k].angle, clocks[k].scale * p);
 						} else { // Waiting.
 							await picoRect(clockRects, 0, x, y, clocks[k].angle, clocks[k].scale * p);
 						}
@@ -638,28 +631,35 @@ async function appMain() {
 	}
 
 	// Update number sprites.
-	for (let k = 0; k < clockMax; k++) {
-		let j = k;
-		if (playerCount >= 3 && k < clockCount) {
+	for (let k = 0; k < clockCount; k++) {
+		let j = k, s = k;
+		if (playerCount >= 3) {
 			if (k == 0) {
 				j = playerIndex >= 0 ? playerIndex : 0;
+				s = 0;
 			} else {
 				j = k - 1;
+				s = 1;
 			}
+		}
 
-			let x = clocks[k].centerx + screens[k == 0 ? 0 : 1].centerx;
-			let y = clocks[k].centery + screens[k == 0 ? 0 : 1].centery;
+		// Draw clock number.
+		let x = clocks[k].centerx + screens[s].centerx;
+		let y = clocks[k].centery + screens[s].centery;
+		await picoChar(players[j].number, -1, x, y, clocks[k].angle, clocks[k].scale*numberScale);
 
-			// Draw clock number.
-			await picoChar(players[j].number, -1, x, y, clocks[k].angle, clocks[k].scale*numberScale);
-
-		} else if (playerCount <= 2 && k < clockCount) {
-
-			let x = clocks[k].centerx + screens[k].centerx;
-			let y = clocks[k].centery + screens[k].centery;
-
-			// Draw clock number.
-			await picoChar(players[j].number, -1, x, y, clocks[k].angle, clocks[k].scale*numberScale);
+		// Draw additional information.
+		if (s == 0) {
+			y = y - 20;
+		} else if (s == 1) {
+			y = y + 20;
+		}
+		if (players[j].addition > 0) {
+			await picoChar("-" + players[j].addition, 1, x, y, clocks[k].angle, clocks[k].scale*numberScale);
+		} else if (players[j].bonus > 0) {
+			await picoChar("+" + players[j].bonus, 1, x, y, clocks[k].angle, clocks[k].scale*numberScale);
+		} else if (players[j].bonus) {
+			await picoChar("+", 1, x, y, clocks[k].angle, clocks[k].scale*numberScale);
 		}
 	}
 

@@ -1,7 +1,7 @@
 {
 	"name": "clock",
 	"short_name": "Clock",
-	"version": "0.9.40204a",
+	"version": "0.9.40205a",
 	"author": "saikoro.org",
 	"background_color": "#dfdfdf",
 	"theme_color": "#dfdfdf",
@@ -15,7 +15,7 @@
 		"sizes": "300x300",
 		"type": "image/svg"
 	}],
-	"display": "fullscreen",
+	"display": "minimal-ui",
 	"start_url": "./?v=1",
 	"contents": ["./", "./pico.css", "./pico.js", "./app.js", "./index.js"]
 }

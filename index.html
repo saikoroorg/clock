@@ -58,19 +58,19 @@ async function picoSwitch(script=null) {
 	await pico.app.switchScript(script);
 }
 
-// Share screen image.
-async function picoShareScreen(bgcolors=null, watermark=null) {
-	await pico.app.shareScreen(bgcolors, watermark);
-}
-
-// Enable wake lock.
-function picoWakelock() {
-	pico.app.wakelock();
+// Lock screen with wakelock.
+function picoLockScreen(enable=true) {
+	pico.app.lockScreen(enable);
 }
 
 // Enable wide screen and return true if landscape mode.
-function picoWidescreen(enable=true) {
-	return pico.app.widescreen(enable);
+function picoWideScreen(enable=true) {
+	return pico.app.wideScreen(enable);
+}
+
+// Share screen image.
+async function picoShareScreen(bgcolors=null, watermark=null) {
+	await pico.app.shareScreen(bgcolors, watermark);
 }
 
 //************************************************************/
@@ -92,6 +92,7 @@ pico.App = class {
 		this.ver = 0; // Protocol version.
 		this.author = "*"; // App author.
 		this.name = ""; // App name.
+		this.wakeLock = null; // Wake lock object.
 		this.lock = "picoAppLock" + Date.now(); // Lock object identifier.
 
 		// Load app version.
@@ -290,16 +291,22 @@ pico.App = class {
 		}
 	}
 
-	// Enable wake lock.
-	wakelock() {
+	// Lock screen with wakelock.
+	lockScreen(enable=true) {
 		try {
 
 			// Wake lock.
 			// Not work on iOS 16 PWA.
 			// https://bugs.webkit.org/show_bug.cgi?id=254545
 			if (navigator.wakeLock) {
-				console.log("Request wake lock.");
-				navigator.wakeLock.request("screen");
+				if (enable) {
+					console.log("Request wake lock.");
+					this.wakeLock = navigator.wakeLock.request("screen");
+				} else if (this.wakeLock) {
+					console.log("Release wake lock.");
+					this.wakeLock.release();
+					this.wakeLock = null;
+				}
 			} else {
 				console.log("No wake lock.");
 			}
@@ -309,10 +316,10 @@ pico.App = class {
 	}
 
 	// Enable wide screen and return true if landscape mode.
-	widescreen(enable) {
-		let e = document.getElementById(enable ? "screen" : "widescreen");
+	wideScreen(enable) {
+		let e = document.getElementById(enable ? "screen" : "wideScreen");
 		if (e) {
-			e.id = enable ? "widescreen" : "screen";
+			e.id = enable ? "wideScreen" : "screen";
 		}
 
 		// True if landscape mode.

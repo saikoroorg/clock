@@ -2,26 +2,82 @@ picoTitle("Clock"); // Title.
 
 // Data and settings.
 var colors = [255,255,255, 223,223,223, 191,191,191, 127,127,127, 63,63,63, 0,0,0]; // Count colors.
+const countMax = 999 * 60; // Maximum count.
+const bonusMax = 99; // Maximum bonus time count.
+
+// Screen.
+const screenMax = 2; // Maximum screen count.
+const screenWidth = 200, screenHeight = 50; // Screen sizes.
+
+// Screen class.
+Screen = class {
+	constructor() {
+		this.centerx = 0; // Center position X.
+		this.centery = 0; // Center position Y.
+		this.width = screenWidth;
+		this.height = screenHeight;
+	}
+};
+var screens = []; // Screen.
+
+// Player.
+const playerMax = 8; // Maximum player count.
+var playerCount = 2; // Player count.
+var playerIndex = 0; // Current player index.
+var playerCountMin2 = 2; // Player count for hourglass mode.
+
+// Player class.
+Player = class {
+	constructor() {
+		this.count = 10 * 60; // Time count for each player.
+		this.current = 0; // Current time count.
+		this.consumed = 0; // Consumed time count.
+		this.starting = false; // Start flag.
+		this.number = ""; // Display count.
+	}
+};
+var players = []; // Player.
+
+// Clock.
+const clockMax = playerMax + 1; // Maximum clock count.
+var clockCount = 2; // Clock count.
+const clockRects = [-7,-4,14,8, -5,-6,10,10]; // Clock base sprite.
+const clockScale = 6; // Clock base scale.
+const numberScale = 0.5; // Clock number scale.
+const bonusScale = 0.25; // Clock adiitional/bonus number scale.
+const clockPosX = 50; // Clock position X on landscape mode.
+const clockPosY = 50; // Clock position Y on portrait mode.
+const clockGridX = 125; // Clock position grid base width for 3+ players.
+const clockGridY = [-15, 15]; // Clock position grid base height for 3+ players.
+
+// Clock class.
+Clock = class {
+	constructor() {
+		this.scale = 1; // Sprite scale.
+		this.angle = 0; // Sprite angle.
+		this.centerx = 0; // Center position X.
+		this.centery = 0; // Center position Y.
+	}
+};
+var clocks = []; // Clock.
 
 // Global variables.
-var player = 2; // Player count.
-var count = 0; // Time count.
+var playing = -1; // Playing count.
+var count = 10 * 60; // Time count.
 var addition = 0; // Additional time count.
 var bonus = 0; // Bonus time count.
-var playing = -1; // Playing count.
-var locked = false; // Locked menu.
 
-const playerMax = 8; // Maximum player count.
-const numberMax = 6; // Maximum number of digits.
-const countMax = 999 * 60; // Maximum count.
+var waiting = 1; // Waiting state: 0=playing, 1=w82start, 2=w82restart.
+var pausing = false; // Pausing on pressing.
+var timeout = false; // Timeout flag.
+var counting = false; // Counting up/down flag.
+var holding = 0; // Holding count.
+
+var startTime = 0; // Start time.
+var landscape = false; // landscape mode.
 
 // Update buttons.
-async function appUpdate(c, a=0, b=0, p=0) {
-	count = c > countMax ? countMax : c > 0 ? c : 0;
-	addition = a > countMax ? countMax : a > 0 ? a : 0;
-	bonus = b > 99 ? 99 : b; // Hourglass mode if b < 0.
-	player = p > playerMax ? playerMax : p > 0 ? p : 2;
-
+async function appUpdate() {
 	if (count > 0) {
 		picoLabel("select", "" + picoDiv(count, 60));
 	} else {
@@ -29,9 +85,6 @@ async function appUpdate(c, a=0, b=0, p=0) {
 	}
 	picoLabel("minus", "-");
 	picoLabel("plus", "+");
-
-	playing = -2; // Replay.
-
 }
 
 // Action button.
@@ -48,8 +101,9 @@ async function appSelect(x) {
 		if (waiting == 1) {
 			if ((x > 0 && count + x <= 999 * 60) || (x < 0 && count + x > 0)) {
 				count = picoDiv(count + x * 60, 60) * 60;
-				appUpdate(count, addition, bonus, player);
+				playing = -1; // Restart.
 				picoBeep(1.2, 0.1);
+				appUpdate();
 
 			} else {
 				picoBeep(-1.2, 0.1);
@@ -74,101 +128,36 @@ async function appSelect(x) {
 
 		if (waiting || pausing) {
 			if (bonus == 0 && addition < 10) {
-				appUpdate(count, 10, 0, player); // -10s additional time (Byoyomi)
+				addition = 10; // -10s additional time (Byoyomi)
 			} else if (bonus == 0 && addition < 30) {
-				appUpdate(count, 30, 0, player); // -30s additional time (Byoyomi)
+				addition = 30; // -30s additional time (Byoyomi)
 			} else if (bonus == 0) {
-				appUpdate(count, 0, -1, player); // +?s opposite time (Hourglass)
+				addition = 0;
+				bonus = -1; // +?s opposite time (Hourglass)
 			} else if (bonus < 5) {
-				appUpdate(count, 0, 5, player); // +5s bonus time (Fischer)
+				addition = 0;
+				bonus = 5; // +5s bonus time (Fischer)
 			} else if (bonus < 10) {
-				appUpdate(count, 0, 10, player); // +10s bonus time (Fischer)
+				addition = 0;
+				bonus = 10; // +10s bonus time (Fischer)
 			} else {
-				appUpdate(count, 0, 0, player);
+				addition = 0;
+				bonus = 0;
 			}
 			picoBeep(1.2, 0.1);
+			appResize();
 		} else {
 			picoBeep(-1.2, 0.1);
 		}
 	}
 }
 
-// Screen.
-const screenMax = 2;
-const screenWidth = 200, screenHeight = 50;
-
-// Screen class.
-Screen = class {
-	constructor() {
-		this.centerx = 0; // Center position X.
-		this.centery = 0; // Center position Y.
-		this.width = 200;
-		this.height = 50;
-	}
-};
-var screens = [];
-
-// Player.
-var playerCount = 2; // Player count.
-var playerIndex = 0; // Current player index.
-var playerCountMin2 = 2; // Player count for hourglass mode.
-
-// Player class.
-Player = class {
-	constructor() {
-		this.count = 0; // Time count.
-		this.addition = 0; // Additional time count.
-		this.bonus = 0; // Bonus time count.
-		this.current = 0; // Current time count.
-		this.consumed = 0; // Consumed time count.
-		this.frames = []; // Sprite frames by current time.
-		this.starting = false; // Start flag.
-		this.number = 0; // Display count.
-	}
-};
-var players = [];
-
-// Clock.
-const clockMax = playerMax + 1; // Maximum clock count.
-//const numberMax = 6; // Maximum number of digits.
-var clockCount = 2; // Clock count.
-const clockScale = 6; // Clock scale.
-const numberScale = 0.5; // Number scale.
-const clockPosX = 50; // Clock position X on landscape mode.
-const clockPosY = 50; // Clock position Y on portrait mode.
-const clockGridX = 125; // Clock position grid base width for 3+ players.
-const clockGridY = [-15, 15]; // Clock position grid base height for 3+ players.
-const buttonWidth = numberWidth = 40;
-const clockRects = [-7,-4,14,8, -5,-6,10,10]; // Clock base sprite.
-
-// Clock class.
-Clock = class {
-	constructor() {
-		this.scale = 1; // Sprite scale.
-		this.angle = 0; // Sprite angle.
-		this.centerx = 0; // Center position X.
-		this.centery = 0; // Center position Y.
-	}
-};
-var clocks = [];
-
-// Playing states.
-var waiting = 1; // Waiting state: 0=playing, 1=w82start, 2=w82restart.
-var pausing = false; // Pausing on pressing.
-var timeout = false; // Timeout flag.
-var hourglass = false; // Hourglass mode.
-var counting = false; // Counting up/down flag.
-var holding = 0; // Holding count.
-
-var startTime = 0; // Start time.
-var landscape = false; // landscape mode.
-
 // Load.
 async function appLoad() {
 
 	// Create screens.
-	for (let j = 0; j < screenMax; j++) {
-		screens[j] = new Screen();
+	for (let i = 0; i < screenMax; i++) {
+		screens[i] = new Screen();
 	}
 
 	// Create players.
@@ -188,33 +177,38 @@ async function appLoad() {
 
 		// Additional time mode. (Byoyomi)
 		if (value.match(/a/i)) {
-			appUpdate(numbers[0] * 60, numbers[1], 0, numbers[2]);
-			locked = true;
+			count = numbers[0] < 0 ? 0 : numbers[0] * 60 < countMax ? numbers[0] * 60 : countMax;
+			addition = numbers[1] < 0 ? 0 : numbers[1] < bonusMax ? numbers[1] : bonusMax;
+			bonus = 0;
+			playerCount = numbers[2] <= 0 ? 2 : numbers[2] < playerMax ? numbers[2] : playerMax;
 
 		// Bonus time mode. (Fischer) / Hourglass mode.
 		} else if (value.match(/b/i)) {
-			appUpdate(numbers[0] * 60, 0, numbers[1] > 0 ? numbers[1] : -1, numbers[2]);
-			locked = true;
+			count = numbers[0] < 0 ? 0 : numbers[0] * 60 < countMax ? numbers[0] * 60 : countMax;
+			addition = 0
+			bonus = numbers[1] <= 0 ? -1 : numbers[1] < bonusMax ? numbers[1] : bonusMax;
+			playerCount = numbers[2] <= 0 ? 2 : numbers[2] < playerMax ? numbers[2] : playerMax;
 
 		// Simple multi players mode. (Kiremake)
 		} else if (value.match(/x/i)) {
-			appUpdate(numbers[0] * 60, 0, 0, numbers[1]);
-			locked = true;
+			count = numbers[0] < 0 ? 0 : numbers[0] * 60 < countMax ? numbers[0] * 60 : countMax;
+			addition = 0
+			bonus = 0;
+			playerCount = numbers[1] <= 0 ? 2 : numbers[1] < playerMax ? numbers[1] : playerMax;
 
 		// Simple 2 players mode. (Kiremake)
 		} else if (numbers[0] > 0) {
-			appUpdate(numbers[0] * 60, 0, 0, 2);
-			locked = true;
-
-		// Default.
-		} else {
-			appUpdate(10 * 60, 0, 0, 2);
+			count = numbers[0] < 0 ? 0 : numbers[0] * 60 < countMax ? numbers[0] * 60 : countMax;
+			addition = 0
+			bonus = 0;
+			playerCount = 2;
 		}
-
-	// Default.
-	} else {
-		appUpdate(10 * 60, 0, 0, 2);
 	}
+	playerCountMin2 = playerCount > 2 ? playerCount : 2; // Minimum 2 players for hourglass mode.
+	clockCount = playerCount <= 2 ? playerCount : playerCount + 1; // Add playing button on 3+ players mode.
+
+	appResize(); // Initialize positions.
+	appUpdate(); // Initialize buttons.
 
 	// Load pallete data.
 	picoColor(colors);
@@ -222,51 +216,46 @@ async function appLoad() {
 
 // Resize.
 async function appResize() {
-	landscape = picoWidescreen();
+	landscape = picoWideScreen();
 
-	// Reset layouts.
-	// 1 Screen for solo player.
+	// Reset layouts for 1 screen.
 	if (playerCount <= 1) {
 		screens[0].centerx = screens[1].centerx = 0;
 		screens[0].centery = screens[1].centery = 0;
-		screens[0].width  = screens[1].width  = 200;
-		screens[0].height = screens[1].height = 50;
+		screens[0].width = screens[1].width = screenWidth;
+		screens[0].height = screens[1].height = screenHeight;
 
 		// 1 Screen for solo player.
 		for (let j = 0; j < 1; j++) {
-			clocks[j].centerx = 0;
-			clocks[j].centery = 0;
+			clocks[j].centerx = clocks[j].centery = 0;
 			clocks[j].scale = clockScale;
 			clocks[j].angle = 0;
 		}
 
-	// 2 Screens for 2 players.
+	// Reset layouts for 2 screens.
 	} else {
 
 		// Set sprite positions and scale for landscape mode.
 		if (landscape) {
 			screens[0].centerx = clockPosX;
-			screens[0].centery = 0;
-			screens[1].centerx = clockPosX;
-			screens[1].centery = 0;
-			screens[0].width  = screens[1].width  = 50;
-			screens[0].height = screens[1].height = 200;
+			screens[1].centerx = -clockPosX;
+			screens[0].centery = screens[1].centery = 0;
+			screens[0].width = screens[1].width = screenHeight;
+			screens[0].height = screens[1].height = screenWidth;
 
 		// Set sprite positions and scale for portrait mode.
 		} else {
-			screens[0].centerx = 0;
 			screens[0].centery = clockPosY;
-			screens[1].centerx = 0;
 			screens[1].centery = -clockPosY;
-			screens[0].width  = screens[1].width  = 200;
-			screens[0].height = screens[1].height = 50;
+			screens[0].centerx = screens[1].centerx = 0;
+			screens[0].width = screens[1].width = screenWidth;
+			screens[0].height = screens[1].height = screenHeight;
 		}
 
 		// 2 Screens for 2 players.
 		if (playerCount <= 2) {
 			for (let j = 0; j < 2; j++) {
-				clocks[j].centerx = 0;
-				clocks[j].centery = 0;
+				clocks[j].centerx = clocks[j].centery = 0;
 				clocks[j].scale = clockScale;
 				clocks[j].angle = 0;
 			}
@@ -278,8 +267,7 @@ async function appResize() {
 
 		// 2 Screens for 3+ players.
 		} else {
-			clocks[0].centerx = 0;
-			clocks[0].centery = 0;
+			clocks[0].centerx = clocks[0].centery = 0;
 			clocks[0].scale = clockScale;
 			clocks[0].angle = 0;
 
@@ -320,35 +308,23 @@ async function appMain() {
 
 		// Reset playing states.
 		waiting = 1;
-		starting = 0;
 		pausing = false;
 		timeout = false;
-		hourglass = bonus < 0;
 		counting = false;
 
 		// Reset player states.
-		playerCount = player;
 		playerIndex = -1;
-		playerCountMin2 = playerCount > 2 ? playerCount : 2; // Minimum 2 players for hourglass mode.
-		clockCount = playerCount <= 2 ? playerCount : playerCount + 1; // Add playing button on 3+ players mode.
 		for (let j = 0; j < playerCountMin2; j++) {
 			players[j].count = players[j].current = count;
-			players[j].addition = addition;
-			players[j].bonus = bonus;
 			players[j].consumed = 0;
 			players[j].starting = false;
 		}
 
-		appResize();
+		// Start clock.
+		startTime = picoTime();
 
 		// Reset playing count.
 		playing = 1;
-	}
-
-	if (playing <= 1) {
-
-		// Start clock.
-		startTime = picoTime();
 	}
 
 	let currentTime = picoTime();
@@ -364,7 +340,7 @@ async function appMain() {
 		if (players[playerIndex].count > 0) {
 
 			// Update all reversed players count on hourglass mode.
-			if (players[playerIndex].bonus < 0) {
+			if (bonus < 0) {
 				for (let j = 0; j < playerCountMin2; j++) {
 					if (j != playerIndex) {
 						players[j].current = players[j].count + players[playerIndex].consumed;
@@ -377,7 +353,7 @@ async function appMain() {
 			if (players[playerIndex].current <= 0) {
 
 				// Start additional time.
-				if (players[playerIndex].addition > 0) {
+				if (addition > 0) {
 
 					// Adjust remained consumed count to avoid continuous beep.
 					players[playerIndex].current = players[playerIndex].consumed = players[playerIndex].consumed - players[playerIndex].count;
@@ -398,12 +374,12 @@ async function appMain() {
 
 		// Additional time count.
 		// (0 Additional time == Free time count)
-		} else if (players[playerIndex].addition >= 0) {
+		} else if (addition >= 0) {
 			players[playerIndex].current = players[playerIndex].consumed > countMax ? countMax : players[playerIndex].consumed;
 
 			// Time out.
-			if (players[playerIndex].addition > 0 && players[playerIndex].current >= players[playerIndex].addition) {
-				players[playerIndex].current = players[playerIndex].addition;
+			if (addition > 0 && players[playerIndex].current >= addition) {
+				players[playerIndex].current = addition;
 				timeout = true;
 
 				// Long beep on timeout.
@@ -425,7 +401,7 @@ async function appMain() {
 
 		// Count down on main time count.
 		} else if (players[playerIndex].count > 0) {
-			if (players[playerIndex].addition > 0) {
+			if (addition > 0) {
 				counter = players[playerIndex].current + 60; // No sound for the last 60 seconds.
 			} else {
 				counter = players[playerIndex].current;
@@ -433,12 +409,12 @@ async function appMain() {
 
 		// Count up on additional time count.
 		} else {
-			if (players[playerIndex].addition <= 0) {
+			if (addition <= 0) {
 				counter = 1000*60 - players[playerIndex].current; // No sound for the last XX seconds.
-			} else if (players[playerIndex].addition <= 5) {
-				counter = players[playerIndex].addition - players[playerIndex].current + 5; // Change sound for the last 5 to 10 seconds.
+			} else if (addition <= 5) {
+				counter = addition - players[playerIndex].current + 5; // Change sound for the last 5 to 10 seconds.
 			} else {
-				counter = players[playerIndex].addition - players[playerIndex].current;
+				counter = addition - players[playerIndex].current;
 			}
 		}
 	}
@@ -480,7 +456,7 @@ async function appMain() {
 
 		// Show delay about 1 second for count down on main time count.
 		let sec = "00"; // Second part.
-		if (players[j].count > 0 && !(hourglass && j != playerIndex)) {
+		if (players[j].count > 0 && !(bonus < 0 && j != playerIndex)) {
 			let s = picoMod(players[j].current + 0.9999, 60); // Round up decimal to integer.
 			sec = s < 10 ? "0" + s : s;
 		} else if (players[j].current >= 1) {
@@ -507,24 +483,8 @@ async function appMain() {
 		players[j].number = min + colon + sec;
 	}
 
-	// Update angle by screen orientation.
-	/*if (playerCount >= 2) {
-		clocks[0].angle = 0;
-		if (!landscape) {
-			screens[0].centerx = 0;
-			screens[0].centery = clockPosY;
-			screens[1].centerx = 0;
-			screens[1].centery = -clockPosY;
-		} else {
-			screens[0].centerx = -clockPosX;
-			screens[0].centery = 0;
-			screens[1].centerx = clockPosX;
-			screens[1].centery = 0;
-		}
-	}*/
-
 	// Update angle for hourglass mode.
-	if (hourglass) {
+	if (bonus < 0) {
 
 		// For solo player.
 		if (playerCount <= 1) {
@@ -559,23 +519,24 @@ async function appMain() {
 	}
 
 	// Update button sprites.
-	let p = playing >= 0 && playing < 6 ? 1 - 0.025 * (6 - playing) : 1;
+	let s = playing < 5 ? 0.8 + 0.04 * playing : 1;
 	for (let k = 0; k < clockMax; k++) {
 
 		// Switching clocks for 1-2 players.
 		if (playerCount <= 2) {
 			if (k < clockCount) {
-				let x = clocks[k].centerx + screens[k].centerx;
-				let y = clocks[k].centery + screens[k].centery;
+				let i = k;
+				let x = clocks[k].centerx + screens[i].centerx;
+				let y = clocks[k].centery + screens[i].centery;
 
 				// Waiting.
 				if (waiting) {
 					if (waiting >= 2 && k == playerIndex) { // Wait to restart.
-						await picoRect(clockRects, 2, x, y, clocks[k].angle, clocks[k].scale * p);
+						await picoRect(clockRects, 2, x, y, clocks[k].angle, clocks[k].scale * s);
 					} else if (pausing && k == playerIndex) { // Just starting.
-						await picoRect(clockRects, 2, x, y, clocks[k].angle, clocks[k].scale * p);
+						await picoRect(clockRects, 2, x, y, clocks[k].angle, clocks[k].scale * s);
 					} else if (playerIndex < 0) { // Waiting.
-						await picoRect(clockRects, 0, x, y, clocks[k].angle, clocks[k].scale * p);
+						await picoRect(clockRects, 0, x, y, clocks[k].angle, clocks[k].scale * s);
 					} else { // Opposite player.
 						await picoRect(clockRects, 3, x, y, clocks[k].angle, clocks[k].scale);
 					}
@@ -583,9 +544,9 @@ async function appMain() {
 				// Playing.
 				} else {
 					if (k == playerIndex) { // Playing.
-						await picoRect(clockRects, 0, x, y, clocks[k].angle, clocks[k].scale * p);
-					} else if (hourglass && playerCount <= 1) { // Reversed hourglass solo player.
-						await picoRect(clockRects, 0, x, y, clocks[k].angle, clocks[k].scale * p);
+						await picoRect(clockRects, 0, x, y, clocks[k].angle, clocks[k].scale * s);
+					} else if (bonus < 0 && playerCount <= 1) { // Reversed hourglass solo player.
+						await picoRect(clockRects, 0, x, y, clocks[k].angle, clocks[k].scale * s);
 					} else { // Opposite player.
 						await picoRect(clockRects, 3, x, y, clocks[k].angle, clocks[k].scale);
 					}
@@ -595,16 +556,17 @@ async function appMain() {
 		// Cyclic clocks for 3+ playres.
 		} else {
 			if (k < clockCount) {
-				let x = clocks[k].centerx + screens[k == 0 ? 0 : 1].centerx;
-				let y = clocks[k].centery + screens[k == 0 ? 0 : 1].centery;
+				let i = k == 0 ? 0 : 1;
+				let x = clocks[k].centerx + screens[i].centerx;
+				let y = clocks[k].centery + screens[i].centery;
 
 				// Waiting to start.
 				if (waiting == 1) {
 					if (k == 0) { // Playing.
 						if (pausing) { // Just starting.
-							await picoRect(clockRects, 2, x, y, clocks[k].angle, clocks[k].scale * p);
+							await picoRect(clockRects, 2, x, y, clocks[k].angle, clocks[k].scale * s);
 						} else { // Waiting.
-							await picoRect(clockRects, 0, x, y, clocks[k].angle, clocks[k].scale * p);
+							await picoRect(clockRects, 0, x, y, clocks[k].angle, clocks[k].scale * s);
 						}
 					} else { // Another players.
 						await picoRect(clockRects, 3, x, y, clocks[k].angle, clocks[k].scale);
@@ -614,12 +576,12 @@ async function appMain() {
 				} else {
 					if (k == 0 || k == playerIndex + 1) { // Playing or target player.
 						if (waiting >= 2) { // Wait to restart.
-							await picoRect(clockRects, 2, x, y, clocks[k].angle, clocks[k].scale * p);
+							await picoRect(clockRects, 2, x, y, clocks[k].angle, clocks[k].scale * s);
 						} else {
 							if (k == 0) { // Playing
-								await picoRect(clockRects, 0, x, y, clocks[k].angle, clocks[k].scale * p);
+								await picoRect(clockRects, 0, x, y, clocks[k].angle, clocks[k].scale * s);
 							} else if (k == playerIndex + 1) { // Target player.
-								await picoRect(clockRects, 0, x, y, clocks[k].angle, clocks[k].scale * p);
+								await picoRect(clockRects, 0, x, y, clocks[k].angle, clocks[k].scale * s);
 							}
 						}
 					} else { // Another players.
@@ -632,34 +594,30 @@ async function appMain() {
 
 	// Update number sprites.
 	for (let k = 0; k < clockCount; k++) {
-		let j = k, s = k;
+		let i = k, j = k;
 		if (playerCount >= 3) {
 			if (k == 0) {
+				i = 0;
 				j = playerIndex >= 0 ? playerIndex : 0;
-				s = 0;
 			} else {
+				i = 1;
 				j = k - 1;
-				s = 1;
 			}
 		}
 
 		// Draw clock number.
-		let x = clocks[k].centerx + screens[s].centerx;
-		let y = clocks[k].centery + screens[s].centery;
+		let x = clocks[k].centerx + screens[i].centerx;
+		let y = clocks[k].centery + screens[i].centery;
 		await picoChar(players[j].number, -1, x, y, clocks[k].angle, clocks[k].scale*numberScale);
 
 		// Draw additional information.
-		if (s == 0) {
-			y = y - 20;
-		} else if (s == 1) {
-			y = y + 20;
-		}
-		if (players[j].addition > 0) {
-			await picoChar("-" + players[j].addition, 1, x, y, clocks[k].angle, clocks[k].scale*numberScale);
-		} else if (players[j].bonus > 0) {
-			await picoChar("+" + players[j].bonus, 1, x, y, clocks[k].angle, clocks[k].scale*numberScale);
-		} else if (players[j].bonus) {
-			await picoChar("+", 1, x, y, clocks[k].angle, clocks[k].scale*numberScale);
+		y = clocks[k].angle >= 180 ? y + clocks[k].scale*4 : y - clocks[k].scale*4;
+		if (addition > 0) {
+			await picoChar("-" + addition, 4, x, y, clocks[k].angle, clocks[k].scale*bonusScale);
+		} else if (bonus > 0) {
+			await picoChar("+" + bonus, 4, x, y, clocks[k].angle, clocks[k].scale*bonusScale);
+		} else if (bonus) {
+			await picoChar("+", 4, x, y, clocks[k].angle, clocks[k].scale*bonusScale);
 		}
 	}
 
@@ -676,7 +634,7 @@ async function appMain() {
 
 	// Cancel/Reset on pressed.
 	if (motion && holding >= 60) {
-		console.log("Holding Motion:" + motions[0] + "," + motions[1] + " Action:" + actions[0] + "," + actions[1]);
+		console.log("Holding m:" + motions[0] + "," + motions[1] + " a:" + actions[0] + "," + actions[1]);
 
 		// Reset timeout or starting.
 		if (timeout || waiting == 1) {
@@ -691,7 +649,7 @@ async function appMain() {
 				if (players[playerIndex].count > 0) {
 
 					// Update all players count.
-					if (players[playerIndex].bonus < 0) {
+					if (bonus < 0) {
 						for (let j = 0; j < playerMax; j++) {
 							let c = players[j].count + (j == playerIndex ? -players[playerIndex].consumed : players[playerIndex].consumed);
 							players[j].current = players[j].count = c > countMax ? countMax : c > 0 ? c : 0;
@@ -719,6 +677,10 @@ async function appMain() {
 			picoBeep(1.2, 0.1);
 			picoBeep(1.2, 0.1, 0.2);
 			picoBeep(1.2, 0.1, 0.4);
+
+			// Unlock.
+			console.log("Unlock screen.");
+			picoLockScreen(false);
 		}
 
 	// Check user action on timeout.
@@ -727,9 +689,13 @@ async function appMain() {
 		// Low beep on timeout.
 		picoBeep(-1.2, 0.1);
 
+		// Unlock.
+		console.log("Unlock screen.");
+		picoLockScreen(false);
+
 	// Check user action on tapping.
 	} else if (action && holding < 60) {
-		console.log("Action Motion:" + motions[0] + "," + motions[1] + " Action:" + actions[0] + "," + actions[1]);
+		console.log("Action m:" + motions[0] + "," + motions[1] + " a:" + actions[0] + "," + actions[1]);
 		holding = 0;
 
 		if (playerIndex >= 0) {
@@ -738,7 +704,7 @@ async function appMain() {
 			if (players[playerIndex].count > 0) {
 
 				// Update all players count.
-				if (players[playerIndex].bonus < 0) {
+				if (bonus < 0) {
 					for (let j = 0; j < playerMax; j++) {
 						let c = players[j].count + (j == playerIndex ? -players[playerIndex].consumed : players[playerIndex].consumed);
 						players[j].current = players[j].count = c > countMax ? countMax : c > 0 ? c : 0;
@@ -747,13 +713,13 @@ async function appMain() {
 
 				// Add bonus time.
 				} else if (!waiting) {
-					let c = players[playerIndex].count - players[playerIndex].consumed + players[playerIndex].bonus;
+					let c = players[playerIndex].count - players[playerIndex].consumed + bonus;
 					players[playerIndex].current = players[playerIndex].count = c > countMax ? countMax : c > 0 ? c : 0;
 					players[playerIndex].consumed = 0;
 				}
 
 			// Reset additional time count on turn end.
-			} else if (players[playerIndex].addition > 0) {
+			} else if (addition > 0) {
 				players[playerIndex].current = players[playerIndex].consumed = 0;
 			}
 		}
@@ -780,6 +746,10 @@ async function appMain() {
 			picoBeep(1.2, 0.1);
 			picoBeep(1.2, 0.1, 0.2);
 
+			// Lock.
+			console.log("Lock screen.");
+			picoLockScreen(true);
+
 		} else {
 
 			// Switch players.
@@ -795,7 +765,7 @@ async function appMain() {
 
 	// Check user motion.
 	} else if (motion && holding < 60) {
-		console.log("Motion Motion:" + motions[0] + "," + motions[1] + " Action:" + actions[0] + "," + actions[1]);
+		console.log("Motion m:" + motions[0] + "," + motions[1] + " a:" + actions[0] + "," + actions[1]);
 		holding++;
 
 		// Start pausing.
@@ -820,12 +790,9 @@ async function appMain() {
 		holding = 0;
 	}
 
-	// Wakelock and flush on playing.
-	if (!waiting || playing < 6) {
-		picoWakelock(true);
+	// Update animation if playing.
+	if (!waiting || playing < 5) {
 		picoFlush();
-	} else if (playing < 7) {
-		picoWakelock(false);
 	}
 
 	// Increment playing count.

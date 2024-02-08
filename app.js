@@ -67,7 +67,8 @@ var count = 10 * 60; // Time count.
 var addition = 0; // Additional time count.
 var bonus = 0; // Bonus time count.
 
-var waiting = 1; // Waiting state: 0=playing, 1=w82start, 2=w82restart.
+var waiting = true; // Waiting flag.
+var restart = false; // Restart flag.
 var pausing = false; // Pausing on pressing.
 var timeout = false; // Timeout flag.
 var counting = false; // Counting up/down flag.
@@ -98,7 +99,7 @@ async function appSelect(x) {
 	if (x != 0) {
 
 		// Change count of total time.
-		if (waiting == 1) {
+		if (waiting && !restart) {
 			if ((x > 0 && count + x <= 999 * 60) || (x < 0 && count + x > 0)) {
 				count = picoDiv(count + x * 60, 60) * 60;
 				playing = -1; // Restart.
@@ -307,7 +308,8 @@ async function appMain() {
 	if (playing < 0) {
 
 		// Reset playing states.
-		waiting = 1;
+		waiting = true;
+		restart = false;
 		pausing = false;
 		timeout = false;
 		counting = false;
@@ -489,7 +491,7 @@ async function appMain() {
 		// For solo player.
 		if (playerCount <= 1) {
 			for (let k = 0; k < playerCountMin2; k++) {
-				if (waiting != 1 && k != playerIndex) {
+				if ((!waiting || restart) && k != playerIndex) {
 					clocks[k].angle = 180;
 				} else {
 					clocks[k].angle = 0;
@@ -499,7 +501,7 @@ async function appMain() {
 		// For 2 players without portrait mode.
 		} else if (playerCount <= 2 && landscape) {
 			for (let k = 0; k < playerCountMin2; k++) {
-				if (waiting != 1 && k != playerIndex) {
+				if ((!waiting || restart) && k != playerIndex) {
 					clocks[k].angle = 180;
 				} else {
 					clocks[k].angle = 0;
@@ -531,7 +533,7 @@ async function appMain() {
 
 				// Waiting.
 				if (waiting) {
-					if (waiting >= 2 && k == playerIndex) { // Wait to restart.
+					if (restart && k == playerIndex) { // Wait to restart.
 						await picoRect(clockRects, 2, x, y, clocks[k].angle, clocks[k].scale * s);
 					} else if (pausing && k == playerIndex) { // Just starting.
 						await picoRect(clockRects, 2, x, y, clocks[k].angle, clocks[k].scale * s);
@@ -561,7 +563,7 @@ async function appMain() {
 				let y = clocks[k].centery + screens[i].centery;
 
 				// Waiting to start.
-				if (waiting == 1) {
+				if (waiting && !restart) {
 					if (k == 0) { // Playing.
 						if (pausing) { // Just starting.
 							await picoRect(clockRects, 2, x, y, clocks[k].angle, clocks[k].scale * s);
@@ -575,7 +577,7 @@ async function appMain() {
 				// Playing.
 				} else {
 					if (k == 0 || k == playerIndex + 1) { // Playing or target player.
-						if (waiting >= 2) { // Wait to restart.
+						if (restart) { // Wait to restart.
 							await picoRect(clockRects, 2, x, y, clocks[k].angle, clocks[k].scale * s);
 						} else {
 							if (k == 0) { // Playing
@@ -637,7 +639,7 @@ async function appMain() {
 		console.log("Holding m:" + motions[0] + "," + motions[1] + " a:" + actions[0] + "," + actions[1]);
 
 		// Reset timeout or starting.
-		if (timeout || waiting == 1) {
+		if (timeout || (waiting && !restart)) {
 			timeout = false;
 			playing = -2;
 
@@ -670,8 +672,8 @@ async function appMain() {
 		}
 
 		// Reset waiting state.
-		if (!waiting) {
-			waiting = 2;
+		if (!restart) {
+			restart = true;
 
 			// High 3 beeps on pause.
 			picoBeep(1.2, 0.1);
@@ -712,7 +714,7 @@ async function appMain() {
 					players[playerIndex].consumed = 0;
 
 				// Add bonus time.
-				} else if (!waiting) {
+				} else if (!waiting && !restart) {
 					let c = players[playerIndex].count - players[playerIndex].consumed + bonus;
 					players[playerIndex].current = players[playerIndex].count = c > countMax ? countMax : c > 0 ? c : 0;
 					players[playerIndex].consumed = 0;
@@ -724,11 +726,11 @@ async function appMain() {
 			}
 		}
 
-		// Start.
-		if (waiting) {
+		// Start or restart.
+		if (waiting || restart) {
 
-			// Start from opposite side on 2 players mode.
-			if (playerCount == 2) {
+			// Restart from opposite side on 2 players mode.
+			if (playerCount == 2 && !restart) {
 				if (actions[0]) {
 					playerIndex = 1;
 				} else {
@@ -739,7 +741,8 @@ async function appMain() {
 			}
 
 			// Start.
-			waiting = 0;
+			waiting = false;
+			restart = false;
 			players[playerIndex].starting = true;
 
 			// High 2 beeps on starting.
@@ -772,10 +775,9 @@ async function appMain() {
 		pausing = true;
 		playing = 1;
 
-		// Waiting to start from opposite side on 2 players mode.
+		// Waiting to restart from opposite side on 2 players mode.
 		if (waiting && !timeout) {
-			waiting = 1; // Reset waiting.
-			if (playerCount == 2) {
+			if (playerCount == 2 && !restart) {
 				if (motions[0]) {
 					playerIndex = 0;
 				} else {

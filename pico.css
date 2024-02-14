@@ -57,13 +57,21 @@ a {
 }
 .logo {
 	height: 60px; margin: 0px 16px;
-	color: #3f3f3f;
 	display: none;
+	flex-direction: row; -webkit-flex-direction: row;
+	justify-content: flex-start; -webkit-justify-content: flex-start;
+	align-items: center; -webkit-align-items: center;
+	color: #3f3f3f;
 }
 .logo #title {
+	display: none;
+	flex-direction: row; -webkit-flex-direction: row;
+	justify-content: flex-start; -webkit-justify-content: flex-start;
+	align-items: center; -webkit-align-items: center;
 	font-size: 24px;
 }
 .logo #subtitle {
+	display: none;
 	font-size: 24px;
 }
 .menu {
@@ -148,9 +156,6 @@ a {
 		}
 		.logo {
 			display: flex; display: -webkit-flex;
-			flex-direction: row; -webkit-flex-direction: row;
-			justify-content: flex-start; -webkit-justify-content: flex-start;
-			align-items: center; -webkit-align-items: center;
 		}
 	}
 }

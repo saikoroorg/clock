@@ -3,7 +3,7 @@
 // Namespace.
 var pico = pico || {};
 pico.name = "pico";
-pico.version = "0.9.40125";
+pico.version = "0.9.40214"; // Updatable by package.json.
 
 /* PICO Image module */
 
@@ -49,27 +49,18 @@ async function picoClear() {
 }
 
 // Set image color pallete.
-async function picoColor(palls=[0,0,0]) {
+async function picoColor(colors=null) {
 	try {
-		pico.image.color(palls);
-	} catch (error) {
-		console.error(error);
-	}
-}
-
-// Draw pixel.
-async function picoPixel(c=0, x=0, y=0, w=0, h=0) {
-	try {
-		await pico.image.pixel(c, x, y, w, h);
+		pico.image.color(colors);
 	} catch (error) {
 		console.error(error);
 	}
 }
 
 // Draw rect.
-async function picoRect(rects=[0,0,0,0], c=0, x=0, y=0, angle=0, scale=1) {
+async function picoRect(c=0, x=0, y=0, width=1, height=1, angle=0, scale=1) {
 	try {
-		await pico.image.drawRect(rects, c, x, y, angle, scale);
+		await pico.image.drawRect(c, x, y, width, height, angle, scale);
 	} catch (error) {
 		console.error(error);
 	}
@@ -85,9 +76,9 @@ async function picoChar(char, c=0, x=0, y=0, angle=0, scale=1) {
 }
 
 // Draw multiple lines of text.
-async function picoText(text, area=null, c=0, x=0, y=0, angle=0, scale=1) {
+async function picoText(text, c=0, x=0, y=0, width=0, height=0, angle=0, scale=1) {
 	try {
-		await pico.image.drawText("" + text, area, c, x, y, angle, scale);
+		await pico.image.drawText("" + text, c, x, y, width, height, angle, scale);
 	} catch (error) {
 		console.error(error);
 	}
@@ -236,29 +227,8 @@ pico.Image = class {
 		[-1,-1,0,0, 0,-2,0,0, 1,-1,0,0], // ^
 		[-1,-1,0,0, -1,1,0,0, 0,0,0,0, 1,-1,0,0, 1,1,0,0]]; // *
 
-	static colors = [
-		 255,255,255, 171,231,255, 199,215,255, 215,203,255, // 30-33
-		 255,199,255, 255,199,219, 255,191,179, 255,219,171, // 34-37
-		 255,231,163, 227,255,163, 171,243,191, 179,255,207, // 38-3b
-		 159,255,243, 188,188,188,   0,  0,  0,   0,  0,  0, // 3c-3f
-		 255,255,255,  63,191,255,  95,115,255, 167,139,253, // 20-23
-		 247,123,255, 255,119,183, 255,119, 99, 255,155, 59, // 24-27
-		 243,191, 63, 131,211, 19,  79,223, 75,  88,248,152, // 28-2b
-		   0,235,219, 117,117,117,   0,  0,  0,   0,  0,  0, // 2c-2f
-		 188,188,188,   0,115,239,  35, 59,239, 131,  0,243, // 10-13
-		 191,  0,191, 231,  0, 91, 219, 43,  0, 203, 79, 15, // 14-17
-		 139,115,  0,   0,151,  0,   0,171,  0,   0,147, 59, // 18-1b
-		   0,131,139,   0,  0,  0,   0,  0,  0,   0,  0,  0, // 1c-1f
-		 117,117,117,  39, 27,143,   0,  0,171,  71,  0,159, // 00-03
-		 143,  0,119, 171,  0, 19, 167,  0,  0, 127, 11,  0, // 04-07
-		  67, 47,  0,   0, 71,  0,   0, 81,  0,   0, 63, 23, // 08-0b
-		  27, 63, 95,   0,  0,  0,   0,  0,  0,   0,  0,  0, // 0c-0f
-		]; // Master image color. (8bit original parameter)
-
-	static colors8 = [255,255,255, 159,255,243, 255,219,171, 188,188,188, 0,115,239, 231,0,91, 0,147,59, 143,0,119, 167,0,0, 0,63,23]; // 10 colors from the original 8 bits.
-	static colors6 = [255,255,255, 159,255,247, 255,223,175, 191,191,191, 0,119,239, 231,0,95, 0,151,63, 143,0,119, 167,0,0, 0,63,23]; // 10 colors from the 6 bits.
-	static colors5 = [255,255,255, 159,255,247, 255,223,175, 191,191,191, 0,119,239, 231,0,95, 0,151,63, 143,0,119, 167,0,0, 0,63,23]; // 10 colors from the 5 bits.
-	static colors0 = [255,255,255, 223,223,223, 191,191,191, 127,127,127, 63,63,63, 0,0,0]; // 5 gray scale colors: ffffff dfdfdf bfbfbf 7f7f7f 3f3f3f 000000
+	// Master image color. (5 gray scale colors: ffffff dfdfdf bfbfbf 7f7f7f 3f3f3f 000000)
+	static colors = [255,255,255, 223,223,223, 191,191,191, 127,127,127, 63,63,63, 0,0,0];
 
 	// Wait and flip image.
 	flip(t=10) {
@@ -277,31 +247,19 @@ pico.Image = class {
 	}
 
 	// Set image color pallete.
-	color(palls=null) {
+	color(colors=null) {
 		return navigator.locks.request(this.lock, async (lock) => {
-			this._color(palls);
+			this._color(colors);
 		}); // end of lock.
 	}
 
-	// Draw pixel to image.
-	pixel(c=0, x=0, y=0, dx=0, dy=0) {
-		return navigator.locks.request(this.lock, async (lock) => {
-			return new Promise(async (resolve) => {
-				await this._ready();
-				await this._reset(x, y);
-				await this._draw(c, -dx, -dy, dx*2, dy*2);
-				resolve();
-			}); // end of new Promise.
-		}); // end of lock.
-	}
-	
 	// Draw rect to image.
-	drawRect(rects=[0,0,0,0], c=0, x=0, y=0, angle=0, scale=1) {
+	drawRect(c=0, x=0, y=0, width=1, height=1, angle=0, scale=1) {
 		return navigator.locks.request(this.lock, async (lock) => {
 			return new Promise(async (resolve) => {
 				await this._ready();
 				await this._reset(x, y, angle, scale);
-				await this._rect(rects, c);
+				await this._draw(c, -(width-1)/2, -(height-1)/2, width-1, height-1);
 				resolve();
 			}); // end of new Promise.
 		}); // end of lock.
@@ -328,35 +286,33 @@ pico.Image = class {
 	}
 
 	// Draw multiple lines of text to image.
-	drawText(text, area=null, c=0, x=0, y=0, angle=0, scale=1) {
-		const ux = pico.Image.charWidth, uy = pico.Image.charHeight;
-		let ox = -(this.canvas[0].width - ux) / 2, oy = -(this.canvas[0].height - uy) / 2;
-		let mx = this.canvas[0].width / ux, my = this.canvas[0].height / uy;
+	drawText(text, c=0, x=0, y=0, width=0, height=0, angle=0, scale=1) {
+		const u = pico.Image.ratio, ux = pico.Image.charWidth, uy = pico.Image.charHeight;
+		let mx = width > 0 ? width / ux - 1 : this.canvas[0].width / (ux * u * scale) - 1;
+		let my = height > 0 ? height / uy - 1 : this.canvas[0].height / (uy * u * scale) - 1;
 
-		if (area) {
-			ox = (area[0] + area[2] / 2);
-			oy = (area[1] + area[3] / 2);
-			mx = (area[2]) / ux;
-			my = (area[3]) / uy;
-		}
-
-		this._debug("Textarea: " + ox + "," + oy + " x " + mx + "," + my + " / " + ux + "," + uy);
+		this._debug("Textarea: " + mx + "," + my + " / " + ux + "," + uy);
 		return navigator.locks.request(this.lock, async (lock) => {
 			return new Promise(async (resolve) => {
 				await this._ready();
-				await this._reset(ox + x, oy + y, angle, scale);
-				await this._move((-ux * (mx - 1)) / 2 , (-uy * (my - 1)) / 2);
-				for (let i = 0, ix = 0, iy = 0; i < text.length && iy < my; i++) {
+				await this._reset(x, y, angle, scale);
+				await this._move((-ux * mx) / 2 , (-uy * my) / 2);
+				for (let i = 0, ix = 0, iy = 0; i < text.length && iy <= my; i++) {
 					let char = text.charCodeAt(i);
 					this._debug("char="+char + " ix="+ix + "/"+mx + " iy="+iy + "/"+my);
 					if (char == "\r".charCodeAt(0) || char == "\n".charCodeAt(0)) {
 						await this._move(-ux * ix, uy);
 						ix = 0;
 						iy++;
-					} else if (ix < mx) {
+					} else if (ix <= mx) {
 						await this._char(char, c);
 						await this._move(ux, 0);
 						ix++;
+						if (ix > mx) {
+							await this._move(-ux * ix, uy);
+							ix = 0;
+							iy++;
+						}
 					}
 				}
 				resolve();
@@ -405,13 +361,13 @@ pico.Image = class {
 				await pico.image.offscreen._reset(0, 0, 0, 1);
 				if (bgcolors) {
 					await pico.image.offscreen._color(bgcolors);
-					await pico.image.offscreen._draw(0, -100, -100, 200, 200);
+					await pico.image.offscreen._draw(0, -pico.Image.width/2, -pico.Image.height/2, pico.Image.width, pico.Image.height);
 				}
 				await pico.image.offscreen._image(pico.image);
 				if (watermark && watermark.length >= 2) {
 					const w = pico.Image.charWidth;
-					let x = 100 - (pico.Image.charWidth * (watermark.length + 1) / 2);
-					let y = 100 - pico.Image.charHeight;
+					let x = pico.Image.width/2 - (pico.Image.charWidth * (watermark.length + 1) / 2);
+					let y = pico.Image.height/2 - pico.Image.charHeight;
 					await pico.image.offscreen._move(x, y);
 					await pico.image.offscreen._move(-(watermark.length-1)/2 * w, 0);
 					for (let i = 0; i < watermark.length; i++) {
@@ -453,7 +409,7 @@ pico.Image = class {
 		this.canvas = []; // Double buffered canvas elements.
 		this.primary = 0; // Primary canvas index.
 		this.context = null; // Canvas 2d context.
-		this.palls = pico.Image.colors; // Master image color. 
+		this.colors = pico.Image.colors; // Master image color. 
 
 		// Setup canvas.
 		this._setup(parent, width, height);
@@ -553,24 +509,24 @@ pico.Image = class {
 	}
 
 	// Reset image transform (scale, rotate, move).
-	_reset(x=0, y=0, angle=0, scale=1) {
+	_reset(x=0, y=0, angle=0, scale=1, h=0) {
 		this._debug("Reset transform matrix.");
 		return new Promise(async (resolve) => {
 			this.context.setTransform(1, 0, 0, 1, 0, 0);
 			await this._move(x, y);
 			await this._rotate(angle);
-			await this._scale(scale);
+			await this._scale(scale, h);
 			resolve();
 		}); // end of new Promise.
 	}
 
 	// Scale image.
-	_scale(scale=1) {
-		this._debug("Scale: " + scale);
+	_scale(scale=1, h=0) {
+		this._debug("Scale: " + scale + "," + h);
 		return new Promise((resolve) => {
 			if (scale != 1) {
 				this.context.translate(this.canvas[0].width / 2, this.canvas[0].height / 2);
-				this.context.scale(scale, scale);
+				this.context.scale(scale, h > 0 ? h : scale);
 				this.context.translate(-this.canvas[0].width / 2, -this.canvas[0].height / 2);
 			}
 			resolve();
@@ -602,31 +558,21 @@ pico.Image = class {
 	}
 
 	// Set image color pallete.
-	_color(palls=null) {
-		this.palls = palls && palls.length > 0 ? palls : pico.Image.colors;
+	_color(colors=null) {
+		this.colors = colors && colors.length > 0 ? colors : pico.Image.colors;
 	}
 
 	// Draw pixel to image.
-	_draw(c=0, x=0, y=0, w=0, h=0) {
-		this._debug("Draw: " + c + "," + x + "+" + w + "," + y + "+" + h);
+	_draw(c=0, x=0, y=0, dx=0, dy=0) {
+		this._debug("Draw: " + c + "," + x + "+" + dx + "," + y + "+" + dy);
 		const u = pico.Image.ratio, cx = (this.canvas[0].width - u) / 2, cy = (this.canvas[0].height - u) / 2;
 		this._debug("Center: " + cx + "," + cy + " / " + u);
 		return new Promise((resolve) => {
-			let k = c >= 0 && c < this.palls.length/3 ? c : this.palls.length/3 - 1;
-			let r = this.palls[k*3], g = this.palls[k*3+1], b = this.palls[k*3+2];
+			let k = c >= 0 && c < this.colors.length/3 ? c : this.colors.length/3 - 1;
+			let r = this.colors[k*3], g = this.colors[k*3+1], b = this.colors[k*3+2];
 			this._debug("Color: " + r + "," + g + "," + b);
 			this.context.fillStyle = "rgb(" + r + "," + g + "," + b + ")";
-			this.context.fillRect(cx + u * x, cy + u * y, u * (w + 1), u * (h + 1));
-			resolve();
-		}); // end of new Promise.
-	}
-
-	// Draw rects to image.
-	_rect(rects, c=0) {
-		return new Promise(async (resolve) => {
-			for (let i = 0; i < rects.length; i += 4) {
-				await this._draw(c, rects[i], rects[i+1], rects[i+2], rects[i+3]);
-			}
+			this.context.fillRect(cx + u * x, cy + u * y, u * (dx + 1), u * (dy + 1));
 			resolve();
 		}); // end of new Promise.
 	}
@@ -649,7 +595,12 @@ pico.Image = class {
 				rects = pico.Image.markShapes[a];
 			}
 		}
-		return this._rect(rects, c);
+		return new Promise(async (resolve) => {
+			for (let i = 0; i < rects.length; i += 4) {
+				await this._draw(c, rects[i], rects[i+1], rects[i+2], rects[i+3]);
+			}
+			resolve();
+		}); // end of new Promise.
 	}
 
 	// Draw sprite to image.
@@ -661,7 +612,7 @@ pico.Image = class {
 				y0 = -(cells[2] - 1) / 2;
 			}
 			if (c >= 0 && x0 < 0 && y0 < 0) {
-				this._rect([x0, y0, x0*-2, y0*-2], c);
+				await this._draw(c, x0, y0, x0*-2, y0*-2);
 			}
 			for (let i = 3; i < cells.length; i += 3) {
 				if (cells[i+3] == 0) {

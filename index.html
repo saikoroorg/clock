@@ -89,6 +89,7 @@ pico.App = class {
 		this.script = null; // App script.
 		this.refer = null; // Referenced script.
 		this.title = ""; // App title.
+		this.subtitle = ""; // App subtitle.
 		this.ver = 0; // Protocol version.
 		this.author = "*"; // App author.
 		this.name = ""; // App name.
@@ -187,7 +188,7 @@ pico.App = class {
 			let title = picoStrings("t");
 			if (title) {
 				this.title = title;
-				picoTitle(this.title);
+				picoTitle(this.title, this.subtitle);
 			}
 			this.url = picoStrings("u");
 			this.ver = picoStrings("v");
@@ -248,13 +249,10 @@ pico.App = class {
 				e[0].innerText = "";
 			}
 		}
-		if (text) {
-			this.title = text;
-			picoLabel("title", text);
-		}
-		if (subtext) {
-			picoLabel("subtitle", subtext)
-		}
+		this.title = text;
+		picoLabel("title", text);
+		this.subtitle = subtext;
+		picoLabel("subtitle", subtext)
 	}
 
 	// Switch script or share.

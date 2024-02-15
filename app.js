@@ -77,7 +77,7 @@ var landscape = false; // landscape mode.
 
 // Update buttons.
 async function appUpdate() {
-	if (state != "waiting" && state != "restart" && state != "timeout") {
+	if (state != "waiting" && state != "restart") {
 		picoTitle();
 		picoLabel("select");
 		picoLabel("minus");
@@ -370,7 +370,6 @@ async function appMain() {
 				} else {
 					players[playerIndex].current = players[playerIndex].count = players[playerIndex].consumed = 0;
 					state = "timeout";
-					timeout = true;
 					appUpdate();
 
 					// Long beep on timeout.
@@ -391,7 +390,6 @@ async function appMain() {
 			if (addition > 0 && players[playerIndex].current >= addition) {
 				players[playerIndex].current = addition;
 				state = "timeout";
-				timeout = true;
 
 				// Long beep on timeout.
 				picoBeep(0, 4);

@@ -289,18 +289,11 @@ pico.Worker = class {
 	_replacing(manifest) {
 		let replacing = {};
 		if (manifest.version) {
-			if (manifest.name) {
-				replacing.version = manifest.name + "#" + manifest.version.substr(-4);
-			} else {
-				replacing.version = "#" + manifest.version.substr(-4);
-			}
+			replacing.version = manifest.version.substr(-4);
 		}
 		if (manifest.author) {
 			replacing.author = manifest.author;
 		}
-		//if (manifest.short_name) {
-		//	replacing.title = manifest.short_name;
-		//}
 		this._debug("Created replacing table: " + JSON.stringify(replacing));
 		return replacing;
 	}

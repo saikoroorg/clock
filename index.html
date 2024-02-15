@@ -13,7 +13,13 @@
 	<h1 id="header">
 		<div class="logo">
 			<a id="title" href="javascript:pico.app.onReset();">
-			<a id="subtitle" href="javascript:top.location.reload();"></a>
+				<span id="titleText"></span>
+				<img id="titleIcon" src="" />
+			</a>
+			<a id="subtitle" href="javascript:top.location.reload();">
+				<span id="subtitleText"></span>
+				<img id="subtitleIcon" src="" />
+			</a>
 		</div>
 		<div class="menu center">
 			<a class="item light secret" id="action" href="javascript:pico.app.onAction();">
@@ -22,12 +28,18 @@
 			</a>
 		</div>
 		<div class="menu">
-			<a class="item clear secret" id="minus" href="javascript:pico.app.onSelect(-1);">-</a>
+			<a class="item clear secret" id="minus" href="javascript:pico.app.onSelect(-1);">
+				<span id="minusText">-</span>
+				<img class="icon" id="minusIcon" src="" />
+			</a>
 			<a class="item light secret" id="select" href="javascript:pico.app.onSelect(0);">
 				<span id="selectText"></span>
 				<img class="icon" id="selectIcon" src="" />
 			</a>
-			<a class="item clear secret" id="plus" href="javascript:pico.app.onSelect(+1);">+</a>
+			<a class="item clear secret" id="plus" href="javascript:pico.app.onSelect(+1);">
+				<span id="plusText">+</span>
+				<img class="icon" id="plusIcon" src="" />
+			</a>
 		</div>
 	</h1>
 	<div id="contents">
@@ -35,7 +47,7 @@
 	</div>
 </div>
 <h6 id="footer">
-	<div id="author"></div>/
+	<div id="author"></div>#
 	<div id="version"></div>
 </h6>
 <!--script>console.log = () => {};</script!-->
@@ -44,18 +56,18 @@
 <!--Event--><script>
 
 // Change label.
-function picoLabel(id, text=null, icon=null) {
-	pico.app.setLabel(id, text, icon);
+async function picoLabel(id, text=null, icon=null) {
+	await pico.app.setLabel(id, text, icon);
 }
 
 // Change title.
-function picoTitle(text=null, subtext=null) {
-	pico.app.setTitle(text, subtext);
+async function picoTitle(text=null, subtext=null) {
+	await pico.app.setTitle(text, subtext);
 }
 
 // Switch script or share.
-async function picoSwitch(script=null) {
-	await pico.app.switchScript(script);
+async function picoSwitch(script=null, returnable=true) {
+	await pico.app.switchScript(script, returnable);
 }
 
 // Lock screen with wakelock.
@@ -92,34 +104,34 @@ pico.App = class {
 		this.subtitle = ""; // App subtitle.
 		this.ver = 0; // Protocol version.
 		this.author = "*"; // App author.
-		this.name = ""; // App name.
+		this.timestamp = ""; // Timestamp (App version).
 		this.wakeLock = null; // Wake lock object.
 		this.lock = "picoAppLock" + Date.now(); // Lock object identifier.
 
-		// Load app version.
+		// Load app information.
 		let e = document.getElementById("author");
 		if (e && e.innerText) {
 			this.author = e.innerText;
 		} else {
-			if (window.location.hostname) {
-				this.author = window.location.hostname;
+			let path = window.location.pathname.replace(/(^\/|[\?\#].*$|\.\w+$|\/$)/g, "");
+			if (path.length > 32) {
+				path = ".." + path.slice(-30);
 			}
+			this.author = window.location.hostname + "/" + path;
 			if (e) {
 				e.innerText = this.author;
 			}
 		}
 		e = document.getElementById("version");
 		if (e && e.innerText) {
-			this.name = e.innerText.replace(/[\?\#].*$/, "");
+			this.timestamp = e.innerText;
 		} else {
-			if (window.location.pathname) {
-				this.name = window.location.pathname.replace(/(^\/|[\?\#].*$|\/$)/g, "");
-				if (this.name.length > 32) {
-					this.name = ".." + this.name.slice(-30);
-				}
-			}
+			let date = new Date(document.lastModified);
+			let mon = ("0" + (date.getMonth() + 1)).slice(-2);
+			let day = ("0" + date.getDate()).slice(-2);
+			this.timestamp = mon + day;
 			if (e) {
-				e.innerText = this.name;
+				e.innerText = this.timestamp;
 			}
 		}
 
@@ -188,7 +200,7 @@ pico.App = class {
 			let title = picoStrings("t");
 			if (title) {
 				this.title = title;
-				picoTitle(this.title, this.subtitle);
+				await picoTitle(this.title, this.subtitle);
 			}
 			this.url = picoStrings("u");
 			this.ver = picoStrings("v");
@@ -212,23 +224,23 @@ pico.App = class {
 	}
 
 	// Change label.
-	setLabel(id, text=null, icon=null) {
+	async setLabel(id, text=null, icon=null) {
 		let e = document.getElementById(id);
 		if (e) {
 			e.style.display = (text || icon) ? "flex" : "none";
 			let e1 = document.getElementById(id + "Text");
 			let e2 = document.getElementById(id + "Icon");
-			if (e1 && text) {
+			if (e2 && (text || icon)) {
+				e2.style.display = "flex";
+				e2.src = icon ? icon : await picoTextData(text, [0,0,0], 0,0,4*text.length,6, 0);
+				if (e1) {
+					e1.style.display = "none";
+				}
+			} else if (e1 && text) {
 				e1.style.display = "flex";
 				e1.innerText = text;
-				if (e2 && !icon) {
+				if (e2) {
 					e2.style.display = "none";
-				}
-			} else if (e2 && icon) {
-				e2.style.display = "flex";
-				e2.src = icon;
-				if (e1 && !text) {
-					e1.style.display = "none";
 				}
 			} else if (text) {
 				e.innerText = text;
@@ -238,7 +250,7 @@ pico.App = class {
 	}
 
 	// Change title.
-	setTitle(text=null, subtext=null) {
+	async setTitle(text=null, subtext=null) {
 		let e = document.getElementsByTagName("title");
 		if (e && e[0]) {
 			if (text) {
@@ -250,27 +262,36 @@ pico.App = class {
 			}
 		}
 		this.title = text;
-		picoLabel("title", text);
 		this.subtitle = subtext;
-		picoLabel("subtitle", subtext)
+		if (text) {
+			await picoLabel("title", text, null);
+			if (subtext) {
+				await picoLabel("subtitle", subtext, null)
+			}
+		} else {
+			await picoLabel("title");
+			await picoLabel("subtitle")
+		}
 	}
 
 	// Switch script or share.
-	async switchScript(script=null) {
+	async switchScript(script=null, returnable=true) {
 		if (this.ver > 0) {
 			picoSetStrings(this.ver, "v");
 		}
 
 		// Change and reload script.
 		if (script) {
-			picoSetStrings(this.path, "u");
-			if (this.title) {
-				picoSetStrings(this.title, "t");
+			if (returnable) {
+				picoSetStrings(this.path, "u");
+				if (this.title) {
+					picoSetStrings(this.title, "t");
+				}
+				if (this.script) {
+					picoSetStrings(this.script, "r");
+				}
 			}
 			picoSetStrings(script, "s");
-			if (this.script) {
-				picoSetStrings(this.script, "r");
-			}
 			await picoReload();
 
 		// Back or jump to next app.
@@ -330,7 +351,7 @@ pico.App = class {
 			bgcolors = [223,223,223, 255,255,255];
 		}
 		if (watermark == null) {
-			watermark = this.author + "/" + this.name;
+			watermark = this.author + "#" + this.timestamp;
 		}
 		let file = await picoScreenFile(bgcolors, watermark);
 		let files = [file];

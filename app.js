@@ -63,7 +63,7 @@ Clock = class {
 var clocks = []; // Clock.
 
 // Global variables.
-var state = ""; // Playing state.
+var state = "waiting"; // Playing state.
 var playing = -1; // Playing count.
 var count = 10 * 60; // Time count.
 var addition = 0; // Additional time count.
@@ -77,12 +77,25 @@ var landscape = false; // landscape mode.
 
 // Update buttons.
 async function appUpdate() {
-	if (state != "waiting" && state != "restart") {
+	if (state == "playing") {
 		picoTitle();
 		picoLabel("select");
 		picoLabel("minus");
 		picoLabel("plus");
-	} else {
+	} else if (state == "pausing") {
+		picoTitle("Clock");
+		if (addition > 0) {
+			picoLabel("select", "-" + addition);
+		} else if (bonus > 0) {
+			picoLabel("select", "+" + bonus);
+		} else if (bonus < 0) {
+			picoLabel("select", "+");
+		} else {
+			picoLabel("select", "-");
+		}
+		picoLabel("minus", "-");
+		picoLabel("plus", "+");
+	} else  {
 		picoTitle("Clock");
 		if (count > 0) {
 			picoLabel("select", "" + picoDiv(count, 60));
@@ -117,7 +130,7 @@ async function appSelect(x) {
 			}
 
 		// Change count of each player time.
-		} else if (state == "restart") {
+		} else if (state == "pausing") {
 			let c = players[playerIndex].count > 0 ? players[playerIndex].current : 0;
 			if ((x > 0 && c + x <= 999 * 60) || (x < 0 && c + x > 0)) {
 				players[playerIndex].count = players[playerIndex].current = picoDiv(c + x * 60, 60) * 60;
@@ -133,7 +146,7 @@ async function appSelect(x) {
 	// Change option.
 	} else {
 
-		if (state == "waiting" || state == "restart") {
+		if (state == "waiting" || state == "pausing") {
 			if (bonus == 0 && addition < 10) {
 				addition = 10; // -10s additional time (Byoyomi)
 			} else if (bonus == 0 && addition < 30) {
@@ -153,6 +166,7 @@ async function appSelect(x) {
 			}
 			picoBeep(1.2, 0.1);
 			appResize();
+			appUpdate();
 		} else {
 			picoBeep(-1.2, 0.1);
 		}
@@ -399,7 +413,7 @@ async function appMain() {
 
 	// Beep timing.
 	let counter = -1;
-	if (state != "waiting" && touching <= 0 && state != "timeout" && playerIndex >= 0) {
+	if (state == "playing" && touching <= 0 && playerIndex >= 0) {
 
 		// Starting count.
 		if (players[playerIndex].starting) {
@@ -475,7 +489,7 @@ async function appMain() {
 
 		// Colon mark.
 		let colon = ":";
-		if (state != "waiting" && state != "restart" && touching <= 0 && state != "timeout" && j == playerIndex) {
+		if (state == "playing" && touching <= 0 && j == playerIndex) {
 			colon = counting ? " " : ":";
 		}
 
@@ -498,7 +512,7 @@ async function appMain() {
 		// For solo player.
 		if (playerCount <= 1) {
 			for (let k = 0; k < playerCountMin2; k++) {
-				if ((state != "waiting" || state == "restart") && k != playerIndex) {
+				if (state == "playing" && k != playerIndex) {
 					clocks[k].angle = 180;
 				} else {
 					clocks[k].angle = 0;
@@ -508,7 +522,7 @@ async function appMain() {
 		// For 2 players without portrait mode.
 		} else if (playerCount <= 2 && landscape) {
 			for (let k = 0; k < playerCountMin2; k++) {
-				if ((state != "waiting" || state == "restart") && k != playerIndex) {
+				if (state == "playing" && k != playerIndex) {
 					clocks[k].angle = 180;
 				} else {
 					clocks[k].angle = 0;
@@ -539,8 +553,8 @@ async function appMain() {
 				let y = clocks[k].centery + screens[i].centery;
 
 				// Waiting.
-				if (state == "waiting" || state == "restart") {
-					if (state == "restart" && k == playerIndex) { // Wait to restart.
+				if (state == "waiting" || state == "pausing") {
+					if (state == "pausing" && k == playerIndex) { // Wait to restart.
 						await picoSprite(clockRects2, -1, x, y, clocks[k].angle, clocks[k].scale * s);
 					} else if (touching > 0 && k == playerIndex) { // Just starting.
 						await picoSprite(clockRects2, -1, x, y, clocks[k].angle, clocks[k].scale * s);
@@ -584,7 +598,7 @@ async function appMain() {
 				// Playing.
 				} else {
 					if (k == 0 || k == playerIndex + 1) { // Playing or target player.
-						if (state == "restart") { // Wait to restart.
+						if (state == "pausing") { // Wait to restart.
 							await picoSprite(clockRects2, -1, x, y, clocks[k].angle, clocks[k].scale * s);
 						} else {
 							if (k == 0) { // Playing
@@ -638,8 +652,8 @@ async function appMain() {
 		picoMotion(screens[0].centerx, screens[0].centery, screens[0].width, screens[0].height),
 		picoMotion(screens[1].centerx, screens[1].centery, screens[1].width, screens[1].height)];
 
-	let action = (playerCount == 2 && state != "waiting" && state != "restart") ? actions[playerIndex] : (actions[0] || actions[1]);
-	let motion = (playerCount == 2 && state != "waiting" && state != "restart") ? motions[playerIndex] : (motions[0] || motions[1]);
+	let action = (playerCount == 2 && state == "playing") ? actions[playerIndex] : (actions[0] || actions[1]);
+	let motion = (playerCount == 2 && state == "playing") ? motions[playerIndex] : (motions[0] || motions[1]);
 
 	// Cancel/Reset on pressed.
 	if (motion && touching >= 60) {
@@ -663,10 +677,10 @@ async function appMain() {
 			picoLockScreen(false);
 
 		// Pause playing.
-		} else if (state != "waiting" && state != "restart") {
+		} else if (state == "playing") {
 			console.log("Pause playing.");
 
-			state = "restart";
+			state = "pausing";
 			appUpdate()
 
 			if (playerIndex >= 0) {
@@ -712,7 +726,7 @@ async function appMain() {
 		console.log("Touched " + touching + ": motion=" + motions[0] + "," + motions[1] + " action=" + actions[0] + "," + actions[1]);
 		touching = 0;
 
-		if (playerIndex >= 0) {
+		if (state == "playing" && playerIndex >= 0) {
 			console.log("Update time count on turn end.");
 
 			// Update time count on turn end.
@@ -727,7 +741,7 @@ async function appMain() {
 					players[playerIndex].consumed = 0;
 
 				// Add bonus time.
-				} else if (state != "waiting" && state != "restart") {
+				} else if (state == "playing") {
 					let c = players[playerIndex].count - players[playerIndex].consumed + bonus;
 					players[playerIndex].current = players[playerIndex].count = c > countMax ? countMax : c > 0 ? c : 0;
 					players[playerIndex].consumed = 0;
@@ -740,7 +754,7 @@ async function appMain() {
 		}
 
 		// Start or restart.
-		if (state == "waiting" || state == "restart") {
+		if (state == "waiting" || state == "pausing") {
 			console.log("Start or restart.");
 
 			// Restart from opposite side on 2 players mode.

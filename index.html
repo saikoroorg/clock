@@ -203,7 +203,7 @@ pico.App = class {
 				await picoTitle(this.title, this.subtitle);
 			}
 			this.url = picoStrings("u");
-			this.ver = picoStrings("v");
+			this.ver = picoNumbers("v")[0];
 			if (typeof appLoad === "function") {
 				await navigator.locks.request(this.lock, async (lock) => {
 					await appLoad();

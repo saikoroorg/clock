@@ -156,7 +156,7 @@ pico.App = class {
 	async onReset() {
 		await navigator.locks.request(this.lock, async (lock) => {
 			picoResetParams();
-			if (this.ver > 0) {
+			if (this.ver > 0 && !picoStrings("v")) {
 				picoSetStrings(this.ver, "v");
 			}
 			await picoReload();
@@ -276,34 +276,38 @@ pico.App = class {
 
 	// Switch script or share.
 	async switchScript(script=null, returnable=true) {
-		if (this.ver > 0) {
+		if (this.ver > 0 && !picoStrings("v")) {
 			picoSetStrings(this.ver, "v");
 		}
 
 		// Change and reload script.
 		if (script) {
 			if (returnable) {
-				picoSetStrings(this.path, "u");
-				if (this.title) {
+				if (!picoStrings("u")) {
+					picoSetStrings(this.path, "u");
+				}
+				if (this.title && !picoStrings("t")) {
 					picoSetStrings(this.title, "t");
 				}
-				if (this.script) {
+				if (this.script && !picoStrings("r")) {
 					picoSetStrings(this.script, "r");
 				}
 			}
-			picoSetStrings(script, "s");
+			if (!picoStrings("s")) {
+				picoSetStrings(script, "s");
+			}
 			await picoReload();
 
 		// Back or jump to next app.
 		} else if (this.url) {
-			if (this.refer) {
+			if (this.refer && !picoStrings("s")) {
 				picoSetStrings(this.refer, "s");
 			}
 			await picoReload(this.url);
 
 		// Share.
 		} else {
-			if (this.script) {
+			if (this.script && !picoStrings("s")) {
 				picoSetStrings(this.script, "s");
 			}
 			await picoShare();

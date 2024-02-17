@@ -82,25 +82,16 @@ async function appUpdate() {
 		picoLabel("select");
 		picoLabel("minus");
 		picoLabel("plus");
-	} else if (state == "pausing") {
+	} else {
 		picoTitle("Clock");
 		if (addition > 0) {
 			picoLabel("select", "-" + addition);
 		} else if (bonus > 0) {
 			picoLabel("select", "+" + bonus);
 		} else if (bonus < 0) {
-			picoLabel("select", "+");
+			picoLabel("select", "*");
 		} else {
-			picoLabel("select", "-");
-		}
-		picoLabel("minus", "-");
-		picoLabel("plus", "+");
-	} else  {
-		picoTitle("Clock");
-		if (count > 0) {
-			picoLabel("select", "" + picoDiv(count, 60));
-		} else {
-			picoLabel("select", "0");
+			picoLabel("select", " ");
 		}
 		picoLabel("minus", "-");
 		picoLabel("plus", "+");
@@ -639,8 +630,8 @@ async function appMain() {
 			await picoChar("-" + addition, 4, x, y, clocks[k].angle, clocks[k].scale*bonusScale);
 		} else if (bonus > 0) {
 			await picoChar("+" + bonus, 4, x, y, clocks[k].angle, clocks[k].scale*bonusScale);
-		} else if (bonus) {
-			await picoChar("+", 4, x, y, clocks[k].angle, clocks[k].scale*bonusScale);
+		} else if (bonus < 0) {
+			await picoChar("*", 4, x, y, clocks[k].angle, clocks[k].scale*bonusScale);
 		}
 	}
 
@@ -713,6 +704,10 @@ async function appMain() {
 			// Unlock.
 			console.log("Unlock screen.");
 			picoLockScreen(false);
+
+		// Continue waiting.
+		} else if (state == "waiting") {
+			playerIndex = -1;
 		}
 
 	// Check user action on timeout.

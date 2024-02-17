@@ -1,7 +1,7 @@
 {
 	"name": "Clock",
 	"short_name": "Clock",
-	"version": "0.9.40216a",
+	"version": "0.9.40216b",
 	"author": "saikoro.org/clock",
 	"background_color": "#dfdfdf",
 	"theme_color": "#dfdfdf",

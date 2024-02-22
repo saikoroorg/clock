@@ -1,6 +1,4 @@
-picoTitle("Clock"); // Title.
-
-// Data and settings.
+const title = "Clock"; // Title.
 const countMax = 999 * 60; // Maximum count.
 const bonusMax = 99; // Maximum bonus time count.
 
@@ -83,7 +81,7 @@ async function appUpdate() {
 		picoLabel("minus");
 		picoLabel("plus");
 	} else {
-		picoTitle("Clock");
+		picoTitle(title);
 		if (addition > 0) {
 			picoLabel("select", "-" + addition);
 		} else if (bonus > 0) {
@@ -91,7 +89,7 @@ async function appUpdate() {
 		} else if (bonus < 0) {
 			picoLabel("select", "*");
 		} else {
-			picoLabel("select", " ");
+			picoLabel("select", "#");
 		}
 		picoLabel("minus", "-");
 		picoLabel("plus", "+");
@@ -166,6 +164,7 @@ async function appSelect(x) {
 
 // Load.
 async function appLoad() {
+	picoTitle(title);
 
 	// Create screens.
 	for (let i = 0; i < screenMax; i++) {

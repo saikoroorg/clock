@@ -61,13 +61,13 @@ async function picoLabel(id, text=null, icon=null) {
 }
 
 // Change title.
-async function picoTitle(text=null, subtext=null) {
-	await pico.app.setTitle(text, subtext);
+async function picoTitle(text=null) {
+	await pico.app.setTitle(text);
 }
 
 // Switch script or share.
-async function picoSwitch(script=null, returnable=true) {
-	await pico.app.switchScript(script, returnable);
+async function picoSwitch(target=null, returl=null) {
+	await pico.app.switchScript(target, returl);
 }
 
 // Lock screen with wakelock.
@@ -85,6 +85,19 @@ async function picoShareScreen(bgcolors=null, watermark=null) {
 	await pico.app.shareScreen(bgcolors, watermark);
 }
 
+// App mode.
+function picoAppMode() {
+	return pico.app.ver > 0;
+}
+
+// Dev mode.
+function picoDevMode(enable=false) {
+	if (enable) {
+		pico.app.ver = -1;
+	}
+	return pico.app.ver < 0;
+}
+
 //************************************************************/
 
 // Namespace.
@@ -96,12 +109,11 @@ pico.App = class {
 
 	// constructor.
 	constructor() {
-		this.path = "./index.html"; // App html path.
-		this.url = null; // Referenced url.
-		this.script = null; // App script.
-		this.refer = null; // Referenced script.
-		this.title = ""; // App title.
-		this.subtitle = ""; // App subtitle.
+		this.returl = null; // Return url.
+		this.script = pico.App.script; // App script.
+		this.retscript = null; // Return script.
+		this.title = ""; // Page title.
+		this.apptitle = ""; // App title.
 		this.ver = 0; // Protocol version.
 		this.author = "*"; // App author.
 		this.timestamp = ""; // Timestamp (App version).
@@ -141,7 +153,7 @@ pico.App = class {
 			this.script = script;
 		}
 		e = document.createElement('script');
-		e.src = this.script ? this.script : pico.App.script;
+		e.src = this.script;
 		document.body.appendChild(e);
 
 		window.addEventListener("resize", async () => {
@@ -155,11 +167,23 @@ pico.App = class {
 	// On reset button.
 	async onReset() {
 		await navigator.locks.request(this.lock, async (lock) => {
-			picoResetParams();
-			if (this.ver > 0 && !picoStrings("v")) {
-				picoSetStrings(this.ver, "v");
+
+			// Back to previous page.
+			if (this.returl) {
+				picoResetParams();
+				if (this.ver > 0) {
+					picoSetStrings(this.ver, "v");
+				}
+				await picoReload(this.returl);
+
+			// Reload this page.
+			} else {
+				picoResetParams();
+				if (this.ver > 0) {
+					picoSetStrings(this.ver, "v");
+				}
+				await picoReload();
 			}
-			await picoReload();
 		}); // end of lock.
 	}
 
@@ -193,16 +217,16 @@ pico.App = class {
 	// On load event.
 	async onLoad() {
 		try {
-			let refer = picoStrings("r");
-			if (refer) {
-				this.refer = refer;
+			let retscript = picoStrings("r");
+			if (retscript) {
+				this.retscript = retscript;
 			}
 			let title = picoStrings("t");
 			if (title) {
-				this.title = title;
-				await picoTitle(this.title, this.subtitle);
+				this.apptitle = title;
+				await picoTitle(this.apptitle);
 			}
-			this.url = picoStrings("u");
+			this.returl = picoStrings("u");
 			this.ver = picoNumbers("v")[0];
 			if (typeof appLoad === "function") {
 				await navigator.locks.request(this.lock, async (lock) => {
@@ -250,7 +274,7 @@ pico.App = class {
 	}
 
 	// Change title.
-	async setTitle(text=null, subtext=null) {
+	async setTitle(text=null) {
 		let e = document.getElementsByTagName("title");
 		if (e && e[0]) {
 			if (text) {
@@ -262,52 +286,72 @@ pico.App = class {
 			}
 		}
 		this.title = text;
-		this.subtitle = subtext;
-		if (text) {
-			await picoLabel("title", text, null);
-			if (subtext) {
-				await picoLabel("subtitle", subtext, null)
-			}
+		if (this.apptitle) {
+			await picoLabel("title", this.apptitle);
+			await picoLabel("subtitle", this.title);
 		} else {
-			await picoLabel("title");
-			await picoLabel("subtitle")
+			await picoLabel("title", this.title);
+			await picoLabel("subtitle");
 		}
 	}
 
 	// Switch script or share.
-	async switchScript(script=null, returnable=true) {
-		if (this.ver > 0 && !picoStrings("v")) {
+	async switchScript(target=null, returl=null) {
+		if (picoDevMode()) {
+			picoSetStrings(-1, "v");
+		} else if (this.ver > 0) {
 			picoSetStrings(this.ver, "v");
 		}
 
 		// Change and reload script.
-		if (script) {
-			if (returnable) {
-				if (!picoStrings("u")) {
-					picoSetStrings(this.path, "u");
-				}
-				if (this.title && !picoStrings("t")) {
-					picoSetStrings(this.title, "t");
-				}
-				if (this.script && !picoStrings("r")) {
-					picoSetStrings(this.script, "r");
-				}
+		if (target && target.match(/js$/)) {
+			if (this.returl && !picoStrings("u")) {
+				picoSetStrings(this.returl, "u");
 			}
-			if (!picoStrings("s")) {
-				picoSetStrings(script, "s");
+			if (this.title && !picoStrings("t")) {
+				picoSetStrings(this.title, "t");
+			}
+			picoSetStrings(target, "s");
+			if (this.script && !picoStrings("r")) {
+				picoSetStrings(this.script, "r");
 			}
 			await picoReload();
 
-		// Back or jump to next app.
-		} else if (this.url) {
-			if (this.refer && !picoStrings("s")) {
-				picoSetStrings(this.refer, "s");
+		// Jump to next page.
+		} else if (target) {
+			if (returl && !picoStrings("u")) {
+				picoSetStrings(returl, "u");
+			} else if (this.returl && !picoStrings("u")) {
+				picoSetStrings(this.returl, "u");
 			}
-			await picoReload(this.url);
+			if (this.title && !picoStrings("t")) {
+				picoSetStrings(this.title, "t");
+			}
+			picoSetStrings("", "s");
+			picoSetStrings("", "r");
+			await picoReload(target);
+
+		// Back to previous script.
+		} else if (this.retscript) {
+			if (this.returl && !picoStrings("u")) {
+				picoSetStrings(this.returl, "u");
+			}
+			picoSetStrings("", "t");
+			picoSetStrings(this.retscript, "s");
+			picoSetStrings("", "r");
+			await picoReload();
+
+		// Back to previous page.
+		} else if (this.returl) {
+			picoSetStrings("", "u");
+			picoSetStrings("", "t");
+			picoSetStrings("", "s");
+			picoSetStrings("", "r");
+			await picoReload(this.returl);
 
 		// Share.
 		} else {
-			if (this.script && !picoStrings("s")) {
+			if (this.script && this.script != pico.App.script) {
 				picoSetStrings(this.script, "s");
 			}
 			await picoShare();
